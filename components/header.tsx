@@ -59,7 +59,7 @@ export function Header() {
         {/* 로고 */}
         <Link href="/" className="flex items-center">
           <Image
-            src="/hsu-logo.pngv=3"
+            src="/hsu-logo.png"
             alt="한성대학교 로고"
             width={220}
             height={55}
