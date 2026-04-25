@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -27,6 +27,26 @@ type PerformanceItem = {
 }
 
 export default function PerformancesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen flex-col">
+          <Header />
+          <main className="flex-1 bg-background">
+            <div className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 lg:px-8">
+              <p className="text-muted-foreground">공연자료 불러오는 중...</p>
+            </div>
+          </main>
+          <Footer />
+        </div>
+      }
+    >
+      <PerformancesContent />
+    </Suspense>
+  )
+}
+
+function PerformancesContent() {
   const searchParams = useSearchParams()
 
   const [performances, setPerformances] = useState<PerformanceItem[]>([])
