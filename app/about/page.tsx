@@ -11,11 +11,19 @@ const supabase = createClient(
 )
 
 export default async function AboutPage() {
-  const { data } = await supabase
+ let data = null
+
+try {
+  const result = await supabase
     .from("about_content")
     .select("*")
     .eq("id", 1)
     .single()
+
+  data = result.data
+} catch (error) {
+  console.error("about_content 불러오기 실패:", error)
+}
 
   const content = data ?? {
     hero_title: "아카이브 소개",
