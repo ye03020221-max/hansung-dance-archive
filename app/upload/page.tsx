@@ -139,6 +139,56 @@ export default function UploadPage() {
     }
   }
 
+  const createVideoThumbnail = (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement("video")
+      const canvas = document.createElement("canvas")
+      const url = URL.createObjectURL(file)
+
+      video.src = url
+      video.muted = true
+      video.playsInline = true
+      video.preload = "metadata"
+
+      video.onloadedmetadata = () => {
+        video.currentTime = Math.min(30, video.duration / 2)
+      }
+
+      video.onseeked = () => {
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+
+        const ctx = canvas.getContext("2d")
+        if (!ctx) {
+          URL.revokeObjectURL(url)
+          reject(new Error("썸네일 생성 실패"))
+          return
+        }
+
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+        canvas.toBlob(
+          (blob) => {
+            URL.revokeObjectURL(url)
+
+            if (blob) {
+              resolve(blob)
+            } else {
+              reject(new Error("썸네일 변환 실패"))
+            }
+          },
+          "image/jpeg",
+          0.85
+        )
+      }
+
+      video.onerror = () => {
+        URL.revokeObjectURL(url)
+        reject(new Error("동영상 썸네일을 만들 수 없어요."))
+      }
+    })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -194,6 +244,29 @@ export default function UploadPage() {
 
         const publicUrl = publicUrlData.publicUrl
 
+        let thumbnailUrl: string | null = null
+
+        if (resourceType === "video") {
+          const thumbnailBlob = await createVideoThumbnail(file)
+
+          const thumbnailPath = `thumbnails/${safeFileName.replace(/\.[^/.]+$/, "")}.jpg`
+
+          const { error: thumbnailUploadError } = await supabase.storage
+            .from("performances")
+            .upload(thumbnailPath, thumbnailBlob, {
+              contentType: "image/jpeg",
+              upsert: true,
+            })
+
+          if (thumbnailUploadError) throw thumbnailUploadError
+
+          const { data: thumbnailPublicUrlData } = supabase.storage
+            .from("performances")
+            .getPublicUrl(thumbnailPath)
+
+          thumbnailUrl = thumbnailPublicUrlData.publicUrl
+        }
+
         const fileTitle =
           selectedFiles.length === 1
             ? metadata.title
@@ -207,6 +280,7 @@ export default function UploadPage() {
             identifier: publicUrl,
             type: resourceType,
             file_url: publicUrl,
+            thumbnail_url: thumbnailUrl,
             file_name: file.name,
             user_id: user.id,
           },
@@ -236,7 +310,9 @@ export default function UploadPage() {
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="grid gap-5 md:grid-cols-2">
               <div>
-                <label className="mb-2 block text-sm font-semibold">파일 선택 * (여러 개 가능)</label>
+                <label className="mb-2 block text-sm font-semibold">
+                  파일 선택 * (여러 개 가능)
+                </label>
 
                 <input
                   ref={fileInputRef}
@@ -297,7 +373,9 @@ export default function UploadPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold">자료 유형 *</label>
+                <label className="mb-2 block text-sm font-semibold">
+                  자료 유형 *
+                </label>
                 <select
                   value={resourceType}
                   onChange={(e) => setResourceType(e.target.value)}
@@ -317,7 +395,9 @@ export default function UploadPage() {
               <h2 className="mb-4 text-xl font-bold">무용 아카이브 기본 정보</h2>
               <div className="grid gap-5 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-semibold">작품 장르</label>
+                  <label className="mb-2 block text-sm font-semibold">
+                    작품 장르
+                  </label>
                   <select
                     value={metadata.genre}
                     onChange={(e) => handleChange("genre", e.target.value)}
@@ -331,7 +411,9 @@ export default function UploadPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold">공연 구분</label>
+                  <label className="mb-2 block text-sm font-semibold">
+                    공연 구분
+                  </label>
                   <select
                     value={metadata.category}
                     onChange={(e) => handleChange("category", e.target.value)}

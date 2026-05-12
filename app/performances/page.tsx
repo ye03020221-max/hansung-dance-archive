@@ -55,6 +55,7 @@ function PerformancesContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "")
   const [selectedGenres, setSelectedGenres] = useState<string[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const [yearRange, setYearRange] = useState([2015, 2035])
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
 
@@ -96,6 +97,14 @@ function PerformancesContent() {
     return /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url)
   }
 
+  const typeOptions = [
+    { label: "사진", value: "photo" },
+    { label: "동영상", value: "video" },
+    { label: "팜플렛", value: "pamphlet" },
+    { label: "포스터", value: "poster" },
+    { label: "문서", value: "document" },
+  ]
+
   const genres = useMemo(() => {
     const uniqueGenres = performances
       .map((item) => item.genre)
@@ -124,10 +133,17 @@ function PerformancesContent() {
     )
   }
 
+  const toggleType = (type: string) => {
+    setSelectedTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    )
+  }
+
   const filteredPerformances = performances.filter((p) => {
     const safeTitle = (p.title || "").toLowerCase()
     const safeGenre = (p.genre || "").toLowerCase()
     const safeCategory = (p.category || "").toLowerCase()
+    const safeType = (p.type || "").toLowerCase()
     const safeYearText = String(p.year || "")
     const safeYearNumber = Number(p.year || 0)
     const keyword = searchQuery.toLowerCase()
@@ -136,6 +152,7 @@ function PerformancesContent() {
       safeTitle.includes(keyword) ||
       safeGenre.includes(keyword) ||
       safeCategory.includes(keyword) ||
+      safeType.includes(keyword) ||
       safeYearText.includes(keyword)
 
     const matchesGenre =
@@ -145,15 +162,19 @@ function PerformancesContent() {
       selectedCategories.length === 0 ||
       selectedCategories.includes(p.category || "")
 
+    const matchesType =
+      selectedTypes.length === 0 || selectedTypes.includes(p.type || "")
+
     const matchesYear =
       !safeYearNumber || (safeYearNumber >= yearRange[0] && safeYearNumber <= yearRange[1])
 
-    return matchesSearch && matchesGenre && matchesCategory && matchesYear
+    return matchesSearch && matchesGenre && matchesCategory && matchesType && matchesYear
   })
 
   const clearFilters = () => {
     setSelectedGenres([])
     setSelectedCategories([])
+    setSelectedTypes([])
     setYearRange([2015, 2035])
     setSearchQuery("")
   }
@@ -166,11 +187,32 @@ function PerformancesContent() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="작품명, 장르, 공연 구분, 연도 검색..."
+            placeholder="작품명, 장르, 공연 구분, 자료 유형, 연도 검색..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
           />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <Label className="text-sm font-semibold text-navy">자료 유형</Label>
+        <div className="space-y-2">
+          {typeOptions.map((type) => (
+            <div key={type.value} className="flex items-center gap-3">
+              <Checkbox
+                id={`type-${type.value}`}
+                checked={selectedTypes.includes(type.value)}
+                onCheckedChange={() => toggleType(type.value)}
+              />
+              <Label
+                htmlFor={`type-${type.value}`}
+                className="cursor-pointer text-sm font-normal text-foreground/80"
+              >
+                {type.label}
+              </Label>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -295,6 +337,7 @@ function PerformancesContent() {
 
                 {(selectedGenres.length > 0 ||
                   selectedCategories.length > 0 ||
+                  selectedTypes.length > 0 ||
                   searchQuery) && (
                   <button
                     onClick={clearFilters}
@@ -329,12 +372,12 @@ function PerformancesContent() {
                           ) : performance.file_url ? (
                             isVideoFile(performance.file_url) ? (
                               <video
-  src={`${performance.file_url}#t=30`}
-  className="h-full w-full object-cover"
-  muted
-  playsInline
-  preload="metadata"
-/>
+                                src={`${performance.file_url}#t=30`}
+                                className="h-full w-full object-cover"
+                                muted
+                                playsInline
+                                preload="metadata"
+                              />
                             ) : isImageFile(performance.file_url) ? (
                               <Image
                                 src={performance.file_url}
