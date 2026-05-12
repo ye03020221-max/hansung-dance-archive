@@ -329,12 +329,12 @@ function PerformancesContent() {
                           ) : performance.file_url ? (
                             isVideoFile(performance.file_url) ? (
                               <video
-                                src={performance.file_url}
-                                className="h-full w-full object-cover"
-                                muted
-                                playsInline
-                                preload="metadata"
-                              />
+  src={`${performance.file_url}#t=30`}
+  className="h-full w-full object-cover"
+  muted
+  playsInline
+  preload="metadata"
+/>
                             ) : isImageFile(performance.file_url) ? (
                               <Image
                                 src={performance.file_url}
