@@ -54,7 +54,7 @@ function PerformancesContent() {
   const [performances, setPerformances] = useState<PerformanceItem[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
+  const [hasMore, setHasMore] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "")
@@ -76,8 +76,6 @@ function PerformancesContent() {
       setLoading(true)
     }
 
-    const to = from + PAGE_SIZE - 1
-
     const { data, error, count } = await supabase
       .from("자료")
       .select("id, title, year, type, genre, category, file_url, thumbnail_url, created_at", {
@@ -85,7 +83,7 @@ function PerformancesContent() {
       })
       .order("year", { ascending: false })
       .order("created_at", { ascending: false })
-      .range(from, to)
+      .limit(1000)
 
     if (error) {
       console.error("자료 불러오기 오류:", error)
@@ -98,8 +96,8 @@ function PerformancesContent() {
     const newData = data || []
 
     setPerformances((prev) => (append ? [...prev, ...newData] : newData))
-    setTotalCount(count || 0)
-    setHasMore(from + newData.length < (count || 0))
+    setTotalCount(count || newData.length)
+    setHasMore(false)
 
     setLoading(false)
     setLoadingMore(false)
@@ -395,14 +393,14 @@ function PerformancesContent() {
                               className="object-contain bg-white transition-transform duration-300 group-hover:scale-105"
                             />
                           ) : performance.file_url && performance.type === "video" ? (
-  <video
-    src={`${performance.file_url}#t=30`}
-    className="h-full w-full object-cover"
-    muted
-    playsInline
-    preload="metadata"
-  />
-) : (
+                            <video
+                              src={`${performance.file_url}#t=30`}
+                              className="h-full w-full object-cover"
+                              muted
+                              playsInline
+                              preload="metadata"
+                            />
+                          ) : (
                             <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                               <ImageIcon className="h-10 w-10" />
                             </div>
@@ -440,19 +438,6 @@ function PerformancesContent() {
                       </Link>
                     ))}
                   </div>
-
-                  {hasMore && !searchQuery && (
-                    <div className="mt-10 flex justify-center">
-                      <Button
-                        onClick={loadMore}
-                        disabled={loadingMore}
-                        variant="outline"
-                        className="min-w-36"
-                      >
-                        {loadingMore ? "불러오는 중..." : "더보기"}
-                      </Button>
-                    </div>
-                  )}
 
                   {filteredPerformances.length === 0 && (
                     <div className="flex flex-col items-center justify-center rounded-2xl bg-card py-16 text-center">
