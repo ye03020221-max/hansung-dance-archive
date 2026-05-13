@@ -19,6 +19,8 @@ type BoardPost = {
   created_at: string
   user_id: string | null
   user_email: string | null
+  admin_reply: string | null
+  admin_reply_updated_at: string | null
 }
 
 export default function BoardDetailPage() {
@@ -27,7 +29,12 @@ export default function BoardDetailPage() {
   const [post, setPost] = useState<BoardPost | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
+  const [savingReply, setSavingReply] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null)
+  const [adminReply, setAdminReply] = useState("")
+
+  const ADMIN_EMAIL = "admin@hansung.ac.kr"
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -40,6 +47,7 @@ export default function BoardDetailPage() {
       } = await supabase.auth.getUser()
 
       setCurrentUserId(user?.id ?? null)
+      setCurrentUserEmail(user?.email ?? null)
 
       const postId = Number(params.id)
 
@@ -72,6 +80,7 @@ export default function BoardDetailPage() {
         views: newViews,
       })
 
+      setAdminReply(data.admin_reply || "")
       setLoading(false)
     }
 
@@ -109,6 +118,41 @@ export default function BoardDetailPage() {
     router.refresh()
   }
 
+  const handleSaveReply = async () => {
+    if (!post) return
+
+    if (currentUserEmail !== ADMIN_EMAIL) {
+      alert("관리자만 답글을 작성할 수 있어.")
+      return
+    }
+
+    setSavingReply(true)
+
+    const { error } = await supabase
+      .from("board_posts")
+      .update({
+        admin_reply: adminReply,
+        admin_reply_updated_at: new Date().toISOString(),
+      })
+      .eq("id", post.id)
+
+    setSavingReply(false)
+
+    if (error) {
+      console.error("답글 저장 오류:", error)
+      alert("답글 저장 중 오류가 발생했어.")
+      return
+    }
+
+    setPost({
+      ...post,
+      admin_reply: adminReply,
+      admin_reply_updated_at: new Date().toISOString(),
+    })
+
+    alert("답글이 저장되었어.")
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const year = date.getFullYear()
@@ -118,6 +162,7 @@ export default function BoardDetailPage() {
   }
 
   const isMyPost = !!post && !!currentUserId && post.user_id === currentUserId
+  const isAdmin = currentUserEmail === ADMIN_EMAIL
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -186,6 +231,42 @@ export default function BoardDetailPage() {
                   {post.content}
                 </div>
               </div>
+
+              {(post.admin_reply || isAdmin) && (
+                <div className="border-t border-border bg-sky-50/50 p-6">
+                  <h2 className="mb-3 text-lg font-bold text-navy">
+                    관리자 답변
+                  </h2>
+
+                  {post.admin_reply && !isAdmin && (
+                    <div className="whitespace-pre-wrap rounded-xl bg-white p-4 leading-7 text-foreground shadow-sm">
+                      {post.admin_reply}
+                    </div>
+                  )}
+
+                  {isAdmin && (
+                    <div className="space-y-3">
+                      <textarea
+                        value={adminReply}
+                        onChange={(e) => setAdminReply(e.target.value)}
+                        rows={6}
+                        placeholder="관리자 답변을 입력하세요."
+                        className="w-full rounded-xl border p-4 leading-7 outline-none focus:border-primary"
+                      />
+
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          onClick={handleSaveReply}
+                          disabled={savingReply}
+                        >
+                          {savingReply ? "저장 중..." : "답변 저장"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex flex-wrap justify-end gap-3 border-t border-border p-6">
                 <Button variant="outline" asChild>
