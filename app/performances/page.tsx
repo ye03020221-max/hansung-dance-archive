@@ -133,12 +133,7 @@ function PerformancesContent() {
     return [...new Set(uniqueGenres)]
   }, [performances])
 
-  const categories = useMemo(() => {
-    const uniqueCategories = performances
-      .map((item) => item.category)
-      .filter((category): category is string => !!category && category.trim() !== "")
-    return [...new Set(uniqueCategories)]
-  }, [performances])
+  const categories = ["졸업공연", "H-Festa", "창작발표회"]
 
   const toggleGenre = (genre: string) => {
     setSelectedGenres((prev) =>
