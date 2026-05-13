@@ -26,6 +26,8 @@ type PerformanceItem = {
   created_at?: string | null
 }
 
+const PAGE_SIZE = 12
+
 export default function PerformancesPage() {
   return (
     <Suspense
@@ -51,6 +53,9 @@ function PerformancesContent() {
 
   const [performances, setPerformances] = useState<PerformanceItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [totalCount, setTotalCount] = useState(0)
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "")
   const [selectedGenres, setSelectedGenres] = useState<string[]>([])
@@ -64,33 +69,48 @@ function PerformancesContent() {
     setSearchQuery(q)
   }, [searchParams])
 
-  useEffect(() => {
-    const fetchPerformances = async () => {
+  const fetchPerformances = async (from = 0, append = false) => {
+    if (append) {
+      setLoadingMore(true)
+    } else {
       setLoading(true)
-
-      const { data, error } = await supabase
-        .from("자료")
-        .select("id, title, year, type, genre, category, file_url, thumbnail_url, created_at")
-        .order("year", { ascending: false })
-.order("created_at", { ascending: false })
-
-      if (error) {
-        console.error("자료 불러오기 오류:", error)
-        setPerformances([])
-        setLoading(false)
-        return
-      }
-
-      setPerformances(data || [])
-      setLoading(false)
     }
 
-    fetchPerformances()
+    const to = from + PAGE_SIZE - 1
+
+    const { data, error, count } = await supabase
+      .from("자료")
+      .select("id, title, year, type, genre, category, file_url, thumbnail_url, created_at", {
+        count: "exact",
+      })
+      .order("year", { ascending: false })
+      .order("created_at", { ascending: false })
+      .range(from, to)
+
+    if (error) {
+      console.error("자료 불러오기 오류:", error)
+      if (!append) setPerformances([])
+      setLoading(false)
+      setLoadingMore(false)
+      return
+    }
+
+    const newData = data || []
+
+    setPerformances((prev) => (append ? [...prev, ...newData] : newData))
+    setTotalCount(count || 0)
+    setHasMore(from + newData.length < (count || 0))
+
+    setLoading(false)
+    setLoadingMore(false)
+  }
+
+  useEffect(() => {
+    fetchPerformances(0, false)
   }, [])
 
-  const isVideoFile = (url: string | null) => {
-    if (!url) return false
-    return /\.(mp4|webm|ogg|mov)$/i.test(url)
+  const loadMore = () => {
+    fetchPerformances(performances.length, true)
   }
 
   const isImageFile = (url: string | null) => {
@@ -331,7 +351,7 @@ function PerformancesContent() {
                 <p className="text-sm text-muted-foreground">
                   총{" "}
                   <span className="font-semibold text-foreground">
-                    {filteredPerformances.length}
+                    {totalCount || filteredPerformances.length}
                   </span>
                   개의 작품
                 </p>
@@ -368,29 +388,21 @@ function PerformancesContent() {
                               src={performance.thumbnail_url}
                               alt={performance.title || "공연 이미지"}
                               fill
-                              className="object-contain bg-white transition-transform duration-300 group-hover:scale-110"
+                              sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                              className="object-contain bg-white transition-transform duration-300 group-hover:scale-105"
                             />
-                          ) : performance.file_url ? (
-                            isVideoFile(performance.file_url) ? (
-                              <video
-                                src={`${performance.file_url}#t=30`}
-                                className="h-full w-full object-contain bg-black"
-                                muted
-                                playsInline
-                                preload="metadata"
-                              />
-                            ) : isImageFile(performance.file_url) ? (
-                              <Image
-                                src={performance.file_url}
-                                alt={performance.title || "공연 이미지"}
-                                fill
-                                className="object-contain bg-white transition-transform duration-300 group-hover:scale-110"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                                <FileText className="h-10 w-10" />
-                              </div>
-                            )
+                          ) : performance.file_url && isImageFile(performance.file_url) ? (
+                            <Image
+                              src={performance.file_url}
+                              alt={performance.title || "공연 이미지"}
+                              fill
+                              sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                              className="object-contain bg-white transition-transform duration-300 group-hover:scale-105"
+                            />
+                          ) : performance.type === "video" ? (
+                            <div className="flex h-full w-full items-center justify-center bg-black text-white">
+                              <FileText className="h-10 w-10 opacity-70" />
+                            </div>
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                               <ImageIcon className="h-10 w-10" />
@@ -429,6 +441,19 @@ function PerformancesContent() {
                       </Link>
                     ))}
                   </div>
+
+                  {hasMore && !searchQuery && (
+                    <div className="mt-10 flex justify-center">
+                      <Button
+                        onClick={loadMore}
+                        disabled={loadingMore}
+                        variant="outline"
+                        className="min-w-36"
+                      >
+                        {loadingMore ? "불러오는 중..." : "더보기"}
+                      </Button>
+                    </div>
+                  )}
 
                   {filteredPerformances.length === 0 && (
                     <div className="flex flex-col items-center justify-center rounded-2xl bg-card py-16 text-center">
