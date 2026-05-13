@@ -24,6 +24,7 @@ type PerformanceDetail = {
   year: string | null
   type: string | null
   genre: string | null
+  category: string | null
   date: string | null
   coverage: string | null
   description: string | null
@@ -32,8 +33,11 @@ type PerformanceDetail = {
   choreographer: string | null
   dancers: string | null
   identifier: string | null
+  subject: string | null
+  publisher: string | null
   format: string | null
   language: string | null
+  relation: string | null
   rights: string | null
   source: string | null
   file_url: string | null
@@ -104,6 +108,23 @@ export default function PerformanceDetailPage({
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean)
+  }
+
+  const MetadataItem = ({
+    label,
+    value,
+  }: {
+    label: string
+    value: string | null
+  }) => {
+    if (!value) return null
+
+    return (
+      <div className="border-b border-border/60 pb-2 last:border-b-0 last:pb-0">
+        <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+        <p className="mt-1 break-words text-sm text-foreground">{value}</p>
+      </div>
+    )
   }
 
   const handleDownload = async () => {
@@ -365,11 +386,22 @@ export default function PerformanceDetailPage({
                   메타데이터
                 </h2>
 
-                <div className="space-y-3 text-sm">
-                  {performance.format && <p>형식: {performance.format}</p>}
-                  {performance.language && <p>언어: {performance.language}</p>}
-                  {performance.rights && <p>권리: {performance.rights}</p>}
-                  {performance.source && <p>출처: {performance.source}</p>}
+                <div className="space-y-3">
+                  <MetadataItem label="Identifier (식별자)" value={performance.identifier} />
+                  <MetadataItem label="Title (제목)" value={performance.title} />
+                  <MetadataItem label="Creator (제작자)" value={performance.creator} />
+                  <MetadataItem label="Subject (주제)" value={performance.subject} />
+                  <MetadataItem label="Description (설명)" value={performance.description} />
+                  <MetadataItem label="Publisher (발행처)" value={performance.publisher} />
+                  <MetadataItem label="Contributor (기여자)" value={performance.contributor} />
+                  <MetadataItem label="Date (날짜)" value={performance.date || performance.year} />
+                  <MetadataItem label="Type (유형)" value={performance.type} />
+                  <MetadataItem label="Format (형식)" value={performance.format} />
+                  <MetadataItem label="Source (출처)" value={performance.source} />
+                  <MetadataItem label="Language (언어)" value={performance.language} />
+                  <MetadataItem label="Relation (관계)" value={performance.relation} />
+                  <MetadataItem label="Coverage (범위)" value={performance.coverage} />
+                  <MetadataItem label="Rights (권리)" value={performance.rights} />
                 </div>
               </div>
             </div>
