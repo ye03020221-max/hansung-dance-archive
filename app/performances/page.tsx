@@ -399,11 +399,15 @@ function PerformancesContent() {
                               sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
                               className="object-contain bg-white transition-transform duration-300 group-hover:scale-105"
                             />
-                          ) : performance.type === "video" ? (
-                            <div className="flex h-full w-full items-center justify-center bg-black text-white">
-                              <FileText className="h-10 w-10 opacity-70" />
-                            </div>
-                          ) : (
+                          ) : performance.file_url && performance.type === "video" ? (
+  <video
+    src={`${performance.file_url}#t=30`}
+    className="h-full w-full object-cover"
+    muted
+    playsInline
+    preload="metadata"
+  />
+) : (
                             <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                               <ImageIcon className="h-10 w-10" />
                             </div>
