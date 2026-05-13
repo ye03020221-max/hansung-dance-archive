@@ -25,6 +25,7 @@ type EditMaterial = {
   coverage: string | null
   rights: string | null
   genre: string | null
+  category: string | null
   year: string | null
   choreographer: string | null
   dancers: string | null
@@ -40,6 +41,7 @@ export default function EditMaterialPage({
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [mediaTypeCode, setMediaTypeCode] = useState("")
 
   const [form, setForm] = useState({
     title: "",
@@ -58,10 +60,37 @@ export default function EditMaterialPage({
     coverage: "",
     rights: "",
     genre: "",
+    category: "",
     year: "",
     choreographer: "",
     dancers: "",
   })
+
+  const genreCodeMap: Record<string, string> = {
+    한국무용: "KB",
+    현대무용: "CD",
+    발레: "BL",
+  }
+
+  const categoryCodeMap: Record<string, string> = {
+    졸업공연: "GR",
+    창작발표회: "CP",
+    "H-Festa": "HD",
+  }
+
+  const generateIdentifier = () => {
+    const year = form.year.trim()
+    const categoryCode = categoryCodeMap[form.category] || ""
+    const genreCode = genreCodeMap[form.genre] || ""
+
+    if (!year || !categoryCode || !genreCode || !mediaTypeCode) {
+      return form.identifier || ""
+    }
+
+    return `${year}${categoryCode}_${genreCode}_${mediaTypeCode}01`
+  }
+
+  const identifierPreview = generateIdentifier()
 
   useEffect(() => {
     const fetchItem = async () => {
@@ -110,6 +139,7 @@ export default function EditMaterialPage({
         coverage: item.coverage || "",
         rights: item.rights || "",
         genre: item.genre || "",
+        category: item.category || "",
         year: item.year || "",
         choreographer: item.choreographer || "",
         dancers: item.dancers || "",
@@ -152,6 +182,7 @@ export default function EditMaterialPage({
       const payload = {
         ...form,
         date: form.date || null,
+        identifier: identifierPreview,
       }
 
       const { error } = await supabase
@@ -207,16 +238,65 @@ export default function EditMaterialPage({
             <div>
               <h2 className="mb-4 text-xl font-bold">무용 아카이브 기본 정보</h2>
               <div className="grid gap-5 md:grid-cols-2">
-                <InputField
-                  label="작품 장르"
-                  value={form.genre}
-                  onChange={(v) => handleChange("genre", v)}
-                />
+                <div>
+                  <label className="mb-2 block text-sm font-semibold">
+                    작품 장르
+                  </label>
+                  <select
+                    value={form.genre}
+                    onChange={(e) => handleChange("genre", e.target.value)}
+                    className="w-full rounded-xl border p-3"
+                  >
+                    <option value="">선택하세요</option>
+                    <option value="한국무용">한국무용</option>
+                    <option value="현대무용">현대무용</option>
+                    <option value="발레">발레</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold">
+                    공연 구분
+                  </label>
+                  <select
+                    value={form.category}
+                    onChange={(e) => handleChange("category", e.target.value)}
+                    className="w-full rounded-xl border p-3"
+                  >
+                    <option value="">선택하세요</option>
+                    <option value="졸업공연">졸업공연</option>
+                    <option value="창작발표회">창작발표회</option>
+                    <option value="H-Festa">H-Festa</option>
+                  </select>
+                </div>
+
                 <InputField
                   label="공연 연도"
                   value={form.year}
                   onChange={(v) => handleChange("year", v)}
                 />
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold">
+                    미디어 타입 코드
+                  </label>
+                  <select
+                    value={mediaTypeCode}
+                    onChange={(e) => setMediaTypeCode(e.target.value)}
+                    className="w-full rounded-xl border p-3"
+                  >
+                    <option value="">선택하세요</option>
+                    <option value="VR">VR - 리허설 영상</option>
+                    <option value="VF">VF - 본공연 영상</option>
+                    <option value="PP">PP - 공연 사진</option>
+                    <option value="PB">PB - 백스테이지 사진</option>
+                    <option value="PT">PT - 포스터</option>
+                    <option value="PR">PR - 프로필 사진</option>
+                    <option value="BK">BK - 프로그램북</option>
+                    <option value="PG">PG - 프로그램북 설명 페이지</option>
+                  </select>
+                </div>
+
                 <InputField
                   label="안무가"
                   value={form.choreographer}
@@ -232,6 +312,17 @@ export default function EditMaterialPage({
 
             <div>
               <h2 className="mb-4 text-xl font-bold">Dublin Core 메타데이터</h2>
+
+              <div className="mb-5 rounded-xl border bg-slate-50 p-4">
+                <label className="mb-2 block text-sm font-semibold">
+                  Identifier (식별자 자동 생성)
+                </label>
+                <input
+                  value={identifierPreview || "장르, 공연 구분, 연도, 미디어 타입 코드를 선택하면 자동 생성됩니다"}
+                  readOnly
+                  className="w-full rounded-xl border bg-white p-3 text-slate-700"
+                />
+              </div>
 
               <div className="grid gap-5 md:grid-cols-2">
                 <InputField
