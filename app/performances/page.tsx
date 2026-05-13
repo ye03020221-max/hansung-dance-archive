@@ -71,7 +71,8 @@ function PerformancesContent() {
       const { data, error } = await supabase
         .from("자료")
         .select("id, title, year, type, genre, category, file_url, thumbnail_url, created_at")
-        .order("created_at", { ascending: false })
+        .order("year", { ascending: false })
+.order("created_at", { ascending: false })
 
       if (error) {
         console.error("자료 불러오기 오류:", error)
