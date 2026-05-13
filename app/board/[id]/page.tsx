@@ -91,7 +91,7 @@ export default function BoardDetailPage() {
     if (!post) return
 
     if (!currentUserId || post.user_id !== currentUserId) {
-      alert("본인이 작성한 글만 삭제할 수 있어.")
+      alert("본인이 작성한 글만 삭제할 수 있습니다.")
       return
     }
 
@@ -109,11 +109,11 @@ export default function BoardDetailPage() {
 
     if (error) {
       console.error("게시글 삭제 오류:", error)
-      alert("삭제 중 오류가 발생했어.")
+      alert("삭제 중 오류가 발생했습니다.")
       return
     }
 
-    alert("게시글이 삭제되었어.")
+    alert("게시글이 삭제되었습니다.")
     router.push("/board")
     router.refresh()
   }
@@ -122,7 +122,7 @@ export default function BoardDetailPage() {
     if (!post) return
 
     if (currentUserEmail !== ADMIN_EMAIL) {
-      alert("관리자만 답글을 작성할 수 있어.")
+      alert("관리자만 답글을 작성할 수 있습니다.")
       return
     }
 
@@ -140,7 +140,7 @@ export default function BoardDetailPage() {
 
     if (error) {
       console.error("답글 저장 오류:", error)
-      alert("답글 저장 중 오류가 발생했어.")
+      alert("답글 저장 중 오류가 발생했습니다.")
       return
     }
 
@@ -150,7 +150,7 @@ export default function BoardDetailPage() {
       admin_reply_updated_at: new Date().toISOString(),
     })
 
-    alert("답글이 저장되었어.")
+    alert("답글이 저장되었습니다.")
   }
 
   const formatDate = (dateString: string) => {
@@ -186,10 +186,10 @@ export default function BoardDetailPage() {
           ) : !post ? (
             <div className="rounded-2xl bg-card p-10 text-center shadow-md">
               <h1 className="mb-3 text-2xl font-bold text-navy">
-                게시글을 찾을 수 없어
+                게시글을 찾을 수 없습니다
               </h1>
               <p className="mb-6 text-muted-foreground">
-                삭제되었거나 존재하지 않는 게시글이야.
+                삭제되었거나 존재하지 않는 게시글입니다.
               </p>
               <Button onClick={() => router.push("/board")}>
                 게시판으로 돌아가기
