@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { Search, Calendar, Users, ArrowRight, ImageIcon, Play } from "lucide-react"
+import { Search, Calendar, Users, ArrowRight, ImageIcon } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -82,11 +82,11 @@ export default function HomePage() {
 
   const archiveSections = [
     {
-      title: "졸업작품",
-      description: "졸업공연 동영상 자료를 확인하세요",
-      href: "/performances?q=졸업공연",
+      title: "한국무용",
+      description: "한국무용 장르의 동영상 자료를 확인하세요",
+      href: "/performances?q=한국무용",
       items: performances
-        .filter((item) => item.category === "졸업공연")
+        .filter((item) => item.genre === "한국무용")
         .slice(0, 3),
     },
     {
@@ -98,11 +98,11 @@ export default function HomePage() {
         .slice(0, 3),
     },
     {
-      title: "창작발표회",
-      description: "창작발표회 동영상 자료를 확인하세요",
-      href: "/performances?q=창작발표회",
+      title: "현대무용",
+      description: "현대무용 장르의 동영상 자료를 확인하세요",
+      href: "/performances?q=현대무용",
       items: performances
-        .filter((item) => item.category === "창작발표회")
+        .filter((item) => item.genre === "현대무용")
         .slice(0, 3),
     },
   ]
@@ -112,7 +112,6 @@ export default function HomePage() {
       <Header />
 
       <main className="flex-1">
-        {/* HERO */}
         <section className="relative overflow-hidden bg-gradient-sky pb-16 pt-8 md:pb-20 md:pt-10">
           <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent via-[#eaf6ff] to-[#eef7ff]" />
 
@@ -170,7 +169,7 @@ export default function HomePage() {
                   공연 아카이브
                 </h2>
                 <p className="mt-2 text-muted-foreground">
-                  졸업작품, 발레, 창작발표회 동영상 자료를 빠르게 확인하세요
+                  한국무용, 발레, 현대무용 동영상 자료를 빠르게 확인하세요
                 </p>
               </div>
 
@@ -248,12 +247,6 @@ export default function HomePage() {
                                   <ImageIcon className="h-10 w-10" />
                                 </div>
                               )}
-
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/10 transition-colors group-hover:bg-black/25">
-                                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-primary shadow-lg">
-                                  <Play className="ml-1 h-7 w-7 fill-current" />
-                                </div>
-                              </div>
                             </div>
 
                             <div className="p-4">
@@ -290,7 +283,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* 학과 역사 */}
         <section className="bg-[#eef7ff] py-16 md:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid items-center gap-12 lg:grid-cols-2">
