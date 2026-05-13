@@ -10,6 +10,7 @@ export default function UploadPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [mediaTypeCode, setMediaTypeCode] = useState("")
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const [metadata, setMetadata] = useState({
@@ -34,6 +35,33 @@ export default function UploadPage() {
     choreographer: "",
     dancers: "",
   })
+
+  const genreCodeMap: Record<string, string> = {
+    한국무용: "KB",
+    현대무용: "CD",
+    발레: "BL",
+  }
+
+  const categoryCodeMap: Record<string, string> = {
+    졸업공연: "GR",
+    창작발표회: "CP",
+    "H-Festa": "HD",
+  }
+
+  const generateIdentifier = (order: number) => {
+    const year = metadata.year.trim()
+    const categoryCode = categoryCodeMap[metadata.category] || ""
+    const genreCode = genreCodeMap[metadata.genre] || ""
+    const orderCode = String(order).padStart(2, "0")
+
+    if (!year || !categoryCode || !genreCode || !mediaTypeCode) {
+      return ""
+    }
+
+    return `${year}${categoryCode}_${genreCode}_${mediaTypeCode}${orderCode}`
+  }
+
+  const identifierPreview = generateIdentifier(1)
 
   const handleChange = (key: string, value: string) => {
     setMetadata((prev) => ({
@@ -110,6 +138,7 @@ export default function UploadPage() {
   const resetForm = () => {
     setSelectedFiles([])
     setResourceType("")
+    setMediaTypeCode("")
     setIsDragging(false)
     setMetadata({
       title: "",
@@ -207,6 +236,26 @@ export default function UploadPage() {
       return
     }
 
+    if (!metadata.year.trim()) {
+      alert("공연 연도를 입력해주세요.")
+      return
+    }
+
+    if (!metadata.genre) {
+      alert("작품 장르를 선택해주세요.")
+      return
+    }
+
+    if (!metadata.category) {
+      alert("공연 구분을 선택해주세요.")
+      return
+    }
+
+    if (!mediaTypeCode) {
+      alert("미디어 타입 코드를 선택해주세요.")
+      return
+    }
+
     setUploading(true)
 
     try {
@@ -222,7 +271,9 @@ export default function UploadPage() {
         return
       }
 
-      for (const file of selectedFiles) {
+      for (const [index, file] of selectedFiles.entries()) {
+        const identifier = generateIdentifier(index + 1)
+
         const fileExt = file.name.split(".").pop()?.toLowerCase() || "bin"
         const safeFileName = `${Date.now()}-${Math.random()
           .toString(36)
@@ -277,7 +328,7 @@ export default function UploadPage() {
             ...metadata,
             title: fileTitle,
             date: metadata.date || new Date().toISOString(),
-            identifier: publicUrl,
+            identifier,
             type: resourceType,
             file_url: publicUrl,
             thumbnail_url: thumbnailUrl,
@@ -433,6 +484,27 @@ export default function UploadPage() {
                   onChange={(v) => handleChange("year", v)}
                 />
 
+                <div>
+                  <label className="mb-2 block text-sm font-semibold">
+                    미디어 타입 코드 *
+                  </label>
+                  <select
+                    value={mediaTypeCode}
+                    onChange={(e) => setMediaTypeCode(e.target.value)}
+                    className="w-full rounded-xl border p-3"
+                  >
+                    <option value="">선택하세요</option>
+                    <option value="VR">VR - 리허설 영상</option>
+                    <option value="VF">VF - 본공연 영상</option>
+                    <option value="PP">PP - 공연 사진</option>
+                    <option value="PB">PB - 백스테이지 사진</option>
+                    <option value="PT">PT - 포스터</option>
+                    <option value="PR">PR - 프로필 사진</option>
+                    <option value="BK">BK - 프로그램북</option>
+                    <option value="PG">PG - 프로그램북 설명 페이지</option>
+                  </select>
+                </div>
+
                 <InputField
                   label="안무가"
                   value={metadata.choreographer}
@@ -449,6 +521,22 @@ export default function UploadPage() {
 
             <div>
               <h2 className="mb-4 text-xl font-bold">Dublin Core 메타데이터</h2>
+
+              <div className="mb-5 rounded-xl border bg-slate-50 p-4">
+                <label className="mb-2 block text-sm font-semibold">
+                  Identifier (식별자 자동 생성)
+                </label>
+                <input
+                  value={identifierPreview || "연도, 장르, 공연 구분, 미디어 타입 코드를 선택하면 자동 생성됩니다"}
+                  readOnly
+                  className="w-full rounded-xl border bg-white p-3 text-slate-700"
+                />
+                {selectedFiles.length > 1 && identifierPreview && (
+                  <p className="mt-2 text-sm text-slate-500">
+                    여러 파일 업로드 시 01, 02, 03 순서로 자동 부여됩니다.
+                  </p>
+                )}
+              </div>
 
               <div className="grid gap-5 md:grid-cols-2">
                 <InputField
