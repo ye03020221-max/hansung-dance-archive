@@ -232,14 +232,15 @@ export default function PerformanceDetailPage({
               <div className="overflow-hidden rounded-2xl bg-card shadow-lg">
                 {performance.file_url ? (
                   isImageFile(performance.file_url) ? (
-                    <div className="relative aspect-video bg-foreground/5">
+                    <div className="relative bg-foreground/5">
                       <Image
-                        src={performance.file_url}
-                        alt={performance.title || "공연 자료"}
-                        fill
-                        priority
-                        className="object-cover"
-                      />
+  src={performance.file_url}
+  alt={performance.title || "공연 자료"}
+  width={1200}
+  height={1600}
+  priority
+  className="h-auto w-full object-contain bg-white"
+/>
                     </div>
                   ) : isVideoFile(performance.file_url) ? (
                     <div className="bg-black p-2 md:p-3">
