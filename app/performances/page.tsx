@@ -367,13 +367,13 @@ function PerformancesContent() {
                               src={performance.thumbnail_url}
                               alt={performance.title || "공연 이미지"}
                               fill
-                              className="object-cover transition-transform duration-300 group-hover:scale-110"
+                              className="object-contain bg-white transition-transform duration-300 group-hover:scale-110"
                             />
                           ) : performance.file_url ? (
                             isVideoFile(performance.file_url) ? (
                               <video
                                 src={`${performance.file_url}#t=30`}
-                                className="h-full w-full object-cover"
+                                className="h-full w-full object-contain bg-black"
                                 muted
                                 playsInline
                                 preload="metadata"
@@ -383,7 +383,7 @@ function PerformancesContent() {
                                 src={performance.file_url}
                                 alt={performance.title || "공연 이미지"}
                                 fill
-                                className="object-cover transition-transform duration-300 group-hover:scale-110"
+                                className="object-contain bg-white transition-transform duration-300 group-hover:scale-110"
                               />
                             ) : (
                               <div className="flex h-full w-full items-center justify-center text-muted-foreground">
