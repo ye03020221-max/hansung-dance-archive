@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { Search, Calendar, Users, ArrowRight, ImageIcon } from "lucide-react"
+import { Search, Calendar, Users, ArrowRight, ImageIcon, Play } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -18,6 +18,7 @@ type HomePerformance = {
   genre: string | null
   category: string | null
   file_url: string | null
+  thumbnail_url: string | null
   type: string | null
 }
 
@@ -35,29 +36,17 @@ export default function HomePage() {
 
       const { data, error } = await supabase
         .from("자료")
-        .select("id, title, year, genre, category, file_url, type")
+        .select("id, title, year, genre, category, file_url, thumbnail_url, type")
         .order("created_at", { ascending: false })
 
       if (error) {
         console.error("홈 최신 자료 불러오기 오류:", error)
         setPerformances([])
       } else {
-        const filteredData =
-          (data || [])
-            .filter((item) => {
-              const url = item.file_url?.toLowerCase() || ""
-              const type = item.type?.toLowerCase() || ""
+        const videoData =
+          (data || []).filter((item) => item.type?.toLowerCase() === "video")
 
-              const isImage =
-                /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url)
-
-              const isPamphlet = type === "pamphlet"
-
-              return isImage && !isPamphlet
-            })
-            .slice(0, 6)
-
-        setPerformances(filteredData)
+        setPerformances(videoData)
       }
 
       const { data: aboutData, error: aboutError } = await supabase
@@ -90,6 +79,33 @@ export default function HomePage() {
 
     router.push(`/performances?q=${encodeURIComponent(keyword)}`)
   }
+
+  const archiveSections = [
+    {
+      title: "졸업작품",
+      description: "졸업공연 동영상 자료를 확인하세요",
+      href: "/performances?q=졸업공연",
+      items: performances
+        .filter((item) => item.category === "졸업공연")
+        .slice(0, 3),
+    },
+    {
+      title: "발레",
+      description: "발레 장르의 동영상 자료를 확인하세요",
+      href: "/performances?q=발레",
+      items: performances
+        .filter((item) => item.genre === "발레")
+        .slice(0, 3),
+    },
+    {
+      title: "창작발표회",
+      description: "창작발표회 동영상 자료를 확인하세요",
+      href: "/performances?q=창작발표회",
+      items: performances
+        .filter((item) => item.category === "창작발표회")
+        .slice(0, 3),
+    },
+  ]
 
   return (
     <div className="flex min-h-screen flex-col bg-[#eef7ff]">
@@ -154,7 +170,7 @@ export default function HomePage() {
                   공연 아카이브
                 </h2>
                 <p className="mt-2 text-muted-foreground">
-                  최신 업로드 사진 자료를 확인하세요
+                  졸업작품, 발레, 창작발표회 동영상 자료를 빠르게 확인하세요
                 </p>
               </div>
 
@@ -174,64 +190,100 @@ export default function HomePage() {
               <div className="rounded-2xl bg-card py-16 text-center shadow-md">
                 <p className="text-muted-foreground">자료 불러오는 중...</p>
               </div>
-            ) : performances.length === 0 ? (
-              <div className="rounded-2xl bg-card py-16 text-center shadow-md">
-                <p className="text-muted-foreground">
-                  아직 등록된 사진 자료가 없어요.
-                </p>
-              </div>
             ) : (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {performances.map((performance) => (
-                  <Link
-                    key={performance.id}
-                    href={`/performances/${performance.id}`}
-                    className="group relative overflow-hidden rounded-2xl bg-card shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
-                  >
-                    <div className="aspect-[4/3] overflow-hidden bg-slate-100">
-                      {performance.file_url ? (
-                        <Image
-                          src={performance.file_url}
-                          alt={performance.title || "공연 자료"}
-                          width={400}
-                          height={300}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-slate-400">
-                          <ImageIcon className="h-10 w-10" />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-navy/80 via-navy/20 to-transparent p-6 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                      {performance.genre && (
-                        <span className="mb-1 inline-block w-fit rounded-full bg-primary/90 px-3 py-1 text-xs font-medium text-primary-foreground">
-                          {performance.genre}
-                        </span>
-                      )}
-                      <h3 className="text-xl font-bold text-primary-foreground">
-                        {performance.title || "제목 없음"}
-                      </h3>
-                      <p className="text-sm text-primary-foreground/80">
-                        {performance.year || "연도 미입력"}
-                        {performance.category ? ` · ${performance.category}` : ""}
-                      </p>
-                    </div>
-
-                    <div className="p-4 transition-opacity duration-300 group-hover:opacity-0">
-                      <h3 className="font-semibold text-card-foreground">
-                        {performance.title || "제목 없음"}
-                      </h3>
-                      <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {performance.year || "연도 미입력"}
-                        </span>
-                        <span>{performance.category || "구분 없음"}</span>
+              <div className="space-y-12">
+                {archiveSections.map((section) => (
+                  <div key={section.title}>
+                    <div className="mb-5 flex items-end justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold text-navy md:text-2xl">
+                          {section.title}
+                        </h3>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {section.description}
+                        </p>
                       </div>
+
+                      <Link
+                        href={section.href}
+                        className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                      >
+                        더보기
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
                     </div>
-                  </Link>
+
+                    {section.items.length === 0 ? (
+                      <div className="rounded-2xl bg-card py-10 text-center shadow-md">
+                        <p className="text-muted-foreground">
+                          아직 등록된 {section.title} 동영상 자료가 없어요.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        {section.items.map((performance) => (
+                          <Link
+                            key={performance.id}
+                            href={`/performances/${performance.id}`}
+                            className="group relative overflow-hidden rounded-2xl bg-card shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
+                          >
+                            <div className="relative aspect-video overflow-hidden bg-slate-100">
+                              {performance.thumbnail_url ? (
+                                <Image
+                                  src={performance.thumbnail_url}
+                                  alt={performance.title || "공연 동영상 썸네일"}
+                                  fill
+                                  className="object-cover transition-transform duration-300 group-hover:scale-110"
+                                />
+                              ) : performance.file_url ? (
+                                <video
+                                  src={`${performance.file_url}#t=30`}
+                                  className="h-full w-full object-cover"
+                                  muted
+                                  playsInline
+                                  preload="metadata"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-slate-400">
+                                  <ImageIcon className="h-10 w-10" />
+                                </div>
+                              )}
+
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/10 transition-colors group-hover:bg-black/25">
+                                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-primary shadow-lg">
+                                  <Play className="ml-1 h-7 w-7 fill-current" />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="p-4">
+                              <div className="mb-2 flex flex-wrap gap-2">
+                                {performance.genre && (
+                                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                    {performance.genre}
+                                  </span>
+                                )}
+                                {performance.category && (
+                                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+                                    {performance.category}
+                                  </span>
+                                )}
+                              </div>
+
+                              <h4 className="font-semibold text-card-foreground">
+                                {performance.title || "제목 없음"}
+                              </h4>
+
+                              <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
+                                <Calendar className="h-4 w-4" />
+                                {performance.year || "연도 미입력"}
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
