@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -48,20 +48,54 @@ export default function UploadPage() {
     "H-Festa": "HD",
   }
 
-  const generateIdentifier = (order: number) => {
-    const year = metadata.year.trim()
-    const categoryCode = categoryCodeMap[metadata.category] || ""
-    const genreCode = genreCodeMap[metadata.genre] || ""
-    const orderCode = String(order).padStart(2, "0")
+  const generateIdentifier = async (order: number = 1) => {
+  const year = metadata.year.trim()
+  const categoryCode = categoryCodeMap[metadata.category] || ""
+  const genreCode = genreCodeMap[metadata.genre] || ""
 
-    if (!year || !categoryCode || !genreCode || !mediaTypeCode) {
-      return ""
-    }
-
-    return `${year}${categoryCode}_${genreCode}_${mediaTypeCode}${orderCode}`
+  if (!year || !categoryCode || !genreCode || !mediaTypeCode) {
+    return ""
   }
 
-  const identifierPreview = generateIdentifier(1)
+  const { data, error } = await supabase
+    .from("자료")
+    .select("identifier")
+    .eq("year", metadata.year)
+    .eq("genre", metadata.genre)
+    .eq("category", metadata.category)
+
+  if (error) {
+    console.error(error)
+    return ""
+  }
+
+  const maxOrder =
+    data?.reduce((max, item) => {
+      const match = item.identifier?.match(/(\d{2})$/)
+      const current = match ? Number(match[1]) : 0
+      return Math.max(max, current)
+    }, 0) || 0
+
+  const orderCode = String(maxOrder + order).padStart(2, "0")
+
+  return `${year}${categoryCode}_${genreCode}_${mediaTypeCode}${orderCode}`
+}
+
+const [identifierPreview, setIdentifierPreview] = useState("")
+
+useEffect(() => {
+  const updatePreview = async () => {
+    const id = await generateIdentifier(1)
+    setIdentifierPreview(id)
+  }
+
+  updatePreview()
+}, [
+  metadata.year,
+  metadata.genre,
+  metadata.category,
+  mediaTypeCode,
+])
 
   const handleChange = (key: string, value: string) => {
     setMetadata((prev) => ({
@@ -272,7 +306,7 @@ export default function UploadPage() {
       }
 
       for (const [index, file] of selectedFiles.entries()) {
-        const identifier = generateIdentifier(index + 1)
+        const identifier = await generateIdentifier(index + 1)
 
         const fileExt = file.name.split(".").pop()?.toLowerCase() || "bin"
         const safeFileName = `${Date.now()}-${Math.random()
