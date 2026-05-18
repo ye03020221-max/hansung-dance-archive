@@ -80,44 +80,43 @@ export default function EditMaterialPage({
   }
 
   const generateIdentifier = async () => {
-    const year = form.year.trim()
-    const categoryCode = categoryCodeMap[form.category] || ""
-    const genreCode = genreCodeMap[form.genre] || ""
+  const year = form.year.trim()
+  const categoryCode = categoryCodeMap[form.category] || ""
+  const genreCode = genreCodeMap[form.genre] || ""
 
-    if (!year || !categoryCode || !genreCode || !mediaTypeCode) {
-      return form.identifier || ""
-    }
-
-    const prefix = `${year}${categoryCode}_${genreCode}_${mediaTypeCode}`
-    const currentIdentifier = form.identifier.trim()
-
-    if (currentIdentifier.startsWith(prefix)) {
-      return currentIdentifier
-    }
-
-    const { data, error } = await supabase
-      .from("자료")
-      .select("id, identifier")
-      .ilike("identifier", `${prefix}%`)
-      .neq("id", Number(id))
-
-    if (error) {
-      console.error("식별자 조회 오류:", error)
-      return `${prefix}01`
-    }
-
-    const usedNumbers =
-      data
-        ?.map((item) => {
-          const match = item.identifier?.match(new RegExp(`^${prefix}(\\d+)$`))
-          return match ? Number(match[1]) : null
-        })
-        .filter((num): num is number => num !== null) || []
-
-    const nextNumber = usedNumbers.length > 0 ? Math.max(...usedNumbers) + 1 : 1
-
-    return `${prefix}${String(nextNumber).padStart(2, "0")}`
+  if (!year || !categoryCode || !genreCode || !mediaTypeCode) {
+    return form.identifier || ""
   }
+
+  const prefix = `${year}${categoryCode}_${genreCode}_${mediaTypeCode}`
+
+  const { data, error } = await supabase
+    .from("자료")
+    .select("id, identifier")
+    .ilike("identifier", `${prefix}%`)
+    .neq("id", Number(id))
+
+  if (error) {
+    console.error("식별자 조회 오류:", error)
+    return `${prefix}01`
+  }
+
+  const usedNumbers =
+    data
+      ?.map((item) => {
+        const match = item.identifier?.match(new RegExp(`^${prefix}(\\d+)$`))
+        return match ? Number(match[1]) : null
+      })
+      .filter((num): num is number => num !== null) || []
+
+  let nextNumber = 1
+
+  while (usedNumbers.includes(nextNumber)) {
+    nextNumber++
+  }
+
+  return `${prefix}${String(nextNumber).padStart(2, "0")}`
+}
 
   useEffect(() => {
     const fetchItem = async () => {
