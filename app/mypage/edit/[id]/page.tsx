@@ -42,6 +42,7 @@ export default function EditMaterialPage({
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [mediaTypeCode, setMediaTypeCode] = useState("")
+  const [identifierPreview, setIdentifierPreview] = useState("")
 
   const [form, setForm] = useState({
     title: "",
@@ -78,7 +79,7 @@ export default function EditMaterialPage({
     "H-Festa": "HD",
   }
 
-  const generateIdentifier = () => {
+  const generateIdentifier = async () => {
     const year = form.year.trim()
     const categoryCode = categoryCodeMap[form.category] || ""
     const genreCode = genreCodeMap[form.genre] || ""
@@ -87,10 +88,36 @@ export default function EditMaterialPage({
       return form.identifier || ""
     }
 
-    return `${year}${categoryCode}_${genreCode}_${mediaTypeCode}01`
-  }
+    const prefix = `${year}${categoryCode}_${genreCode}_${mediaTypeCode}`
+    const currentIdentifier = form.identifier.trim()
 
-  const identifierPreview = generateIdentifier()
+    if (currentIdentifier.startsWith(prefix)) {
+      return currentIdentifier
+    }
+
+    const { data, error } = await supabase
+      .from("자료")
+      .select("id, identifier")
+      .ilike("identifier", `${prefix}%`)
+      .neq("id", Number(id))
+
+    if (error) {
+      console.error("식별자 조회 오류:", error)
+      return `${prefix}01`
+    }
+
+    const usedNumbers =
+      data
+        ?.map((item) => {
+          const match = item.identifier?.match(new RegExp(`^${prefix}(\\d+)$`))
+          return match ? Number(match[1]) : null
+        })
+        .filter((num): num is number => num !== null) || []
+
+    const nextNumber = usedNumbers.length > 0 ? Math.max(...usedNumbers) + 1 : 1
+
+    return `${prefix}${String(nextNumber).padStart(2, "0")}`
+  }
 
   useEffect(() => {
     const fetchItem = async () => {
@@ -122,6 +149,22 @@ export default function EditMaterialPage({
 
       const item = data as EditMaterial
 
+      const mediaCodeMatch = item.identifier?.match(
+        /_(VR|VF|PP|PB|PT|PR|BK|PG)\d+$/
+      )
+
+      if (mediaCodeMatch) {
+        setMediaTypeCode(mediaCodeMatch[1])
+      } else if (item.type === "video") {
+        setMediaTypeCode("VF")
+      } else if (item.type === "photo") {
+        setMediaTypeCode("PP")
+      } else if (item.type === "poster") {
+        setMediaTypeCode("PT")
+      } else if (item.type === "pamphlet") {
+        setMediaTypeCode("BK")
+      }
+
       setForm({
         title: item.title || "",
         creator: item.creator || "",
@@ -151,6 +194,15 @@ export default function EditMaterialPage({
     fetchItem()
   }, [id])
 
+  useEffect(() => {
+    const updateIdentifierPreview = async () => {
+      const nextIdentifier = await generateIdentifier()
+      setIdentifierPreview(nextIdentifier)
+    }
+
+    updateIdentifierPreview()
+  }, [form.year, form.genre, form.category, form.identifier, mediaTypeCode])
+
   const handleChange = (key: string, value: string) => {
     setForm((prev) => ({
       ...prev,
@@ -179,10 +231,12 @@ export default function EditMaterialPage({
         return
       }
 
+      const newIdentifier = await generateIdentifier()
+
       const payload = {
         ...form,
         date: form.date || null,
-        identifier: identifierPreview,
+        identifier: newIdentifier,
       }
 
       const { error } = await supabase
@@ -318,7 +372,10 @@ export default function EditMaterialPage({
                   Identifier (식별자 자동 생성)
                 </label>
                 <input
-                  value={identifierPreview || "장르, 공연 구분, 연도, 미디어 타입 코드를 선택하면 자동 생성됩니다"}
+                  value={
+                    identifierPreview ||
+                    "장르, 공연 구분, 연도, 미디어 타입 코드를 선택하면 자동 생성됩니다"
+                  }
                   readOnly
                   className="w-full rounded-xl border bg-white p-3 text-slate-700"
                 />
