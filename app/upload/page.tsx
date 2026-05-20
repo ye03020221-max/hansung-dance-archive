@@ -549,12 +549,6 @@ export default function UploadPage() {
                   onChange={(v) => handleChange("year", v)}
                 />
 
-                <InputField
-  label="공연 장소"
-  value={metadata.coverage}
-  onChange={(v) => handleChange("coverage", v)}
-/>
-
                 <div>
                   <label className="mb-2 block text-sm font-semibold">
                     미디어 타입 코드 *

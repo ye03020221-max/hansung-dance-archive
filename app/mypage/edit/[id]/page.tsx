@@ -521,7 +521,7 @@ export default function EditMaterialPage({
                   onChange={(v) => handleChange("relation", v)}
                 />
                 <InputField
-                  label="Coverage"
+                  label="Coverage (공연 장소)"
                   value={form.coverage}
                   onChange={(v) => handleChange("coverage", v)}
                 />
