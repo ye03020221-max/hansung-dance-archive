@@ -375,14 +375,14 @@ function PerformancesContent() {
                         href={`/performances/${performance.id}`}
                         className="group overflow-hidden rounded-2xl bg-card shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
                       >
-                        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                        <div className="relative h-[320px] overflow-hidden bg-black">
                           {performance.thumbnail_url ? (
                             <Image
                               src={performance.thumbnail_url}
                               alt={performance.title || "공연 이미지"}
                               fill
                               sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                              className="object-contain bg-white transition-transform duration-300 group-hover:scale-105"
+                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                             />
                           ) : performance.file_url && isImageFile(performance.file_url) ? (
                             <Image
@@ -390,7 +390,7 @@ function PerformancesContent() {
                               alt={performance.title || "공연 이미지"}
                               fill
                               sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                              className="object-contain bg-white transition-transform duration-300 group-hover:scale-105"
+                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                             />
                           ) : performance.file_url && performance.type === "video" ? (
                             <video
