@@ -8,10 +8,12 @@ import { supabase } from "@/lib/supabase"
 export default function UploadPage() {
   const [resourceType, setResourceType] = useState("")
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [thumbnailFiles, setThumbnailFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [mediaTypeCode, setMediaTypeCode] = useState("")
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const thumbnailInputRef = useRef<HTMLInputElement | null>(null)
 
   const [metadata, setMetadata] = useState({
     title: "",
@@ -37,7 +39,7 @@ export default function UploadPage() {
   })
 
   const genreCodeMap: Record<string, string> = {
-    한국무용: "KB",
+    한국무용: "KD",
     현대무용: "CD",
     발레: "BL",
   }
@@ -49,53 +51,48 @@ export default function UploadPage() {
   }
 
   const generateIdentifier = async (order: number = 1) => {
-  const year = metadata.year.trim()
-  const categoryCode = categoryCodeMap[metadata.category] || ""
-  const genreCode = genreCodeMap[metadata.genre] || ""
+    const year = metadata.year.trim()
+    const categoryCode = categoryCodeMap[metadata.category] || ""
+    const genreCode = genreCodeMap[metadata.genre] || ""
 
-  if (!year || !categoryCode || !genreCode || !mediaTypeCode) {
-    return ""
+    if (!year || !categoryCode || !genreCode || !mediaTypeCode) {
+      return ""
+    }
+
+    const { data, error } = await supabase
+      .from("자료")
+      .select("identifier")
+      .eq("year", metadata.year)
+      .eq("genre", metadata.genre)
+      .eq("category", metadata.category)
+
+    if (error) {
+      console.error(error)
+      return ""
+    }
+
+    const maxOrder =
+      data?.reduce((max, item) => {
+        const match = item.identifier?.match(/(\d{2})$/)
+        const current = match ? Number(match[1]) : 0
+        return Math.max(max, current)
+      }, 0) || 0
+
+    const orderCode = String(maxOrder + order).padStart(2, "0")
+
+    return `${year}${categoryCode}_${genreCode}_${mediaTypeCode}${orderCode}`
   }
 
-  const { data, error } = await supabase
-    .from("자료")
-    .select("identifier")
-    .eq("year", metadata.year)
-    .eq("genre", metadata.genre)
-    .eq("category", metadata.category)
+  const [identifierPreview, setIdentifierPreview] = useState("")
 
-  if (error) {
-    console.error(error)
-    return ""
-  }
+  useEffect(() => {
+    const updatePreview = async () => {
+      const id = await generateIdentifier(1)
+      setIdentifierPreview(id)
+    }
 
-  const maxOrder =
-    data?.reduce((max, item) => {
-      const match = item.identifier?.match(/(\d{2})$/)
-      const current = match ? Number(match[1]) : 0
-      return Math.max(max, current)
-    }, 0) || 0
-
-  const orderCode = String(maxOrder + order).padStart(2, "0")
-
-  return `${year}${categoryCode}_${genreCode}_${mediaTypeCode}${orderCode}`
-}
-
-const [identifierPreview, setIdentifierPreview] = useState("")
-
-useEffect(() => {
-  const updatePreview = async () => {
-    const id = await generateIdentifier(1)
-    setIdentifierPreview(id)
-  }
-
-  updatePreview()
-}, [
-  metadata.year,
-  metadata.genre,
-  metadata.category,
-  mediaTypeCode,
-])
+    updatePreview()
+  }, [metadata.year, metadata.genre, metadata.category, mediaTypeCode])
 
   const handleChange = (key: string, value: string) => {
     setMetadata((prev) => ({
@@ -142,6 +139,19 @@ useEffect(() => {
     )
   }
 
+  const removeThumbnailFile = (targetFile: File) => {
+    setThumbnailFiles((prev) =>
+      prev.filter(
+        (file) =>
+          !(
+            file.name === targetFile.name &&
+            file.size === targetFile.size &&
+            file.lastModified === targetFile.lastModified
+          )
+      )
+    )
+  }
+
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     e.stopPropagation()
@@ -169,8 +179,21 @@ useEffect(() => {
     }
   }
 
+  const handleThumbnailInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+
+    if (!files || files.length === 0) return
+
+    setThumbnailFiles(Array.from(files))
+
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.value = ""
+    }
+  }
+
   const resetForm = () => {
     setSelectedFiles([])
+    setThumbnailFiles([])
     setResourceType("")
     setMediaTypeCode("")
     setIsDragging(false)
@@ -200,56 +223,10 @@ useEffect(() => {
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
-  }
 
-  const createVideoThumbnail = (file: File): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      const video = document.createElement("video")
-      const canvas = document.createElement("canvas")
-      const url = URL.createObjectURL(file)
-
-      video.src = url
-      video.muted = true
-      video.playsInline = true
-      video.preload = "metadata"
-
-      video.onloadedmetadata = () => {
-        video.currentTime = Math.min(30, video.duration / 2)
-      }
-
-      video.onseeked = () => {
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-
-        const ctx = canvas.getContext("2d")
-        if (!ctx) {
-          URL.revokeObjectURL(url)
-          reject(new Error("썸네일 생성 실패"))
-          return
-        }
-
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-
-        canvas.toBlob(
-          (blob) => {
-            URL.revokeObjectURL(url)
-
-            if (blob) {
-              resolve(blob)
-            } else {
-              reject(new Error("썸네일 변환 실패"))
-            }
-          },
-          "image/jpeg",
-          0.85
-        )
-      }
-
-      video.onerror = () => {
-        URL.revokeObjectURL(url)
-        reject(new Error("동영상 썸네일을 만들 수 없어요."))
-      }
-    })
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.value = ""
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -330,16 +307,22 @@ useEffect(() => {
         const publicUrl = publicUrlData.publicUrl
 
         let thumbnailUrl: string | null = null
+        const thumbnailFile = thumbnailFiles[index]
 
-        if (resourceType === "video") {
-          const thumbnailBlob = await createVideoThumbnail(file)
+        if (thumbnailFile) {
+          const thumbnailExt =
+            thumbnailFile.name.split(".").pop()?.toLowerCase() || "jpg"
 
-          const thumbnailPath = `thumbnails/${safeFileName.replace(/\.[^/.]+$/, "")}.jpg`
+          const thumbnailFileName = `${Date.now()}-${Math.random()
+            .toString(36)
+            .slice(2)}.${thumbnailExt}`
+
+          const thumbnailPath = `thumbnails/${thumbnailFileName}`
 
           const { error: thumbnailUploadError } = await supabase.storage
             .from("performances")
-            .upload(thumbnailPath, thumbnailBlob, {
-              contentType: "image/jpeg",
+            .upload(thumbnailPath, thumbnailFile, {
+              contentType: thumbnailFile.type || "image/jpeg",
               upsert: true,
             })
 
@@ -455,6 +438,54 @@ useEffect(() => {
                     </div>
                   )}
                 </div>
+
+                <div className="mt-5">
+                  <label className="mb-2 block text-sm font-semibold">
+                    썸네일 이미지 선택 (선택사항 / 여러 개 가능)
+                  </label>
+
+                  <input
+                    ref={thumbnailInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleThumbnailInputChange}
+                    className="w-full rounded-xl border p-3"
+                  />
+
+                  <p className="mt-2 text-sm text-slate-500">
+                    여러 자료를 올릴 경우 파일 순서와 썸네일 순서를 맞춰주세요.
+                    예: 첫 번째 영상 → 첫 번째 썸네일
+                  </p>
+
+                  {thumbnailFiles.length > 0 && (
+                    <div className="mt-3 rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
+                      <p className="mb-3 font-semibold">
+                        선택된 썸네일 {thumbnailFiles.length}개
+                      </p>
+
+                      <div className="max-h-40 space-y-2 overflow-y-auto">
+                        {thumbnailFiles.map((file, index) => (
+                          <div
+                            key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+                            className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2"
+                          >
+                            <span className="truncate pr-3">
+                              {index + 1}. {file.name}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeThumbnailFile(file)}
+                              className="rounded-md px-2 py-1 text-xs font-semibold text-red-500 hover:bg-red-50"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -518,6 +549,12 @@ useEffect(() => {
                   onChange={(v) => handleChange("year", v)}
                 />
 
+                <InputField
+  label="공연 장소"
+  value={metadata.coverage}
+  onChange={(v) => handleChange("coverage", v)}
+/>
+
                 <div>
                   <label className="mb-2 block text-sm font-semibold">
                     미디어 타입 코드 *
@@ -561,7 +598,10 @@ useEffect(() => {
                   Identifier (식별자 자동 생성)
                 </label>
                 <input
-                  value={identifierPreview || "연도, 장르, 공연 구분, 미디어 타입 코드를 선택하면 자동 생성됩니다"}
+                  value={
+                    identifierPreview ||
+                    "연도, 장르, 공연 구분, 미디어 타입 코드를 선택하면 자동 생성됩니다"
+                  }
                   readOnly
                   className="w-full rounded-xl border bg-white p-3 text-slate-700"
                 />
@@ -585,7 +625,7 @@ useEffect(() => {
                   onChange={(v) => handleChange("creator", v)}
                 />
                 <InputField
-                  label="Subject (주제)"
+                  label="Subject (장르)"
                   value={metadata.subject}
                   onChange={(v) => handleChange("subject", v)}
                 />
@@ -630,7 +670,7 @@ useEffect(() => {
                   onChange={(v) => handleChange("relation", v)}
                 />
                 <InputField
-                  label="Coverage"
+                  label="Coverage (공연 장소)"
                   value={metadata.coverage}
                   onChange={(v) => handleChange("coverage", v)}
                 />

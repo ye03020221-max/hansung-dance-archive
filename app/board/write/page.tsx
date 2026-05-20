@@ -28,7 +28,7 @@ export default function BoardWritePage() {
       } = await supabase.auth.getUser()
 
       if (error || !user) {
-        alert("로그인한 사용자만 글을 작성할 수 있어.")
+        alert("로그인한 사용자만 글을 작성할 수 있습니다.")
         router.push("/login")
         return
       }
@@ -51,7 +51,7 @@ export default function BoardWritePage() {
     }
 
     if (!userId) {
-      alert("로그인 정보를 확인할 수 없어.")
+      alert("로그인 정보를 확인할 수 없습니다.")
       return
     }
 
@@ -72,11 +72,11 @@ export default function BoardWritePage() {
 
     if (error) {
       console.error("게시글 등록 오류:", error)
-      alert("등록 중 오류가 발생했어.")
+      alert("등록 중 오류가 발생했습니다.")
       return
     }
 
-    alert("게시글이 등록되었어.")
+    alert("게시글이 등록되었습니다.")
     router.push("/board")
     router.refresh()
   }

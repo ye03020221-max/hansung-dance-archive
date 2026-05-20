@@ -160,7 +160,7 @@ export default function PerformanceDetailPage({
   const handleDelete = async () => {
     if (!performance) return
 
-    const ok = window.confirm("정말 삭제할까?")
+    const ok = window.confirm("정말 삭제할까요?")
     if (!ok) return
 
     try {

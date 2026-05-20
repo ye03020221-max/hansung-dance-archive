@@ -1,5 +1,11 @@
 import Image from "next/image"
-import { BookOpen, Users, Archive, Target, Heart } from "lucide-react"
+import {
+  BookOpen,
+  Users,
+  Archive,
+  Target,
+  Heart,
+} from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { createClient } from "@supabase/supabase-js"
@@ -11,23 +17,24 @@ const supabase = createClient(
 )
 
 export default async function AboutPage() {
- let data = null
+  let data = null
 
-try {
-  const result = await supabase
-    .from("about_content")
-    .select("*")
-    .eq("id", 1)
-    .single()
+  try {
+    const result = await supabase
+      .from("about_content")
+      .select("*")
+      .eq("id", 1)
+      .single()
 
-  data = result.data
-} catch (error) {
-  console.error("about_content 불러오기 실패:", error)
-}
+    data = result.data
+  } catch (error) {
+    console.error("about_content 불러오기 실패:", error)
+  }
 
   const content = data ?? {
     hero_title: "아카이브 소개",
-    hero_subtitle: "한성대학교 무용학과의 역사와 예술을 기록하고 보존합니다",
+    hero_subtitle:
+      "한성대학교 무용학과의 역사와 예술을 기록하고 보존합니다",
 
     mission_badge: "Our Mission",
     mission_title: "소중한 예술적 유산을 보존합니다",
@@ -45,19 +52,24 @@ try {
     archive_count_label: "아카이브 자료",
 
     feature_1_title: "디지털 보존",
-    feature_1_desc: "소중한 공연 자료를 디지털화하여 영구적으로 보존합니다.",
+    feature_1_desc:
+      "소중한 공연 자료를 디지털화하여 영구적으로 보존합니다.",
 
     feature_2_title: "열린 공유",
-    feature_2_desc: "학과 구성원 모두가 자료를 업로드하고 공유할 수 있습니다.",
+    feature_2_desc:
+      "학과 구성원 모두가 자료를 업로드하고 공유할 수 있습니다.",
 
     feature_3_title: "표준화된 메타데이터",
-    feature_3_desc: "Dublin Core 표준을 기반으로 체계적으로 자료를 관리합니다.",
+    feature_3_desc:
+      "Dublin Core 표준을 기반으로 체계적으로 자료를 관리합니다.",
 
     feature_4_title: "쉬운 검색",
-    feature_4_desc: "연도, 장르, 공연 유형별로 원하는 자료를 빠르게 찾을 수 있습니다.",
+    feature_4_desc:
+      "연도, 장르, 공연 유형별로 원하는 자료를 빠르게 찾을 수 있습니다.",
 
     timeline_title: "학과 연혁",
-    timeline_subtitle: "한성대학교 무용학과의 발자취를 따라갑니다",
+    timeline_subtitle:
+      "한성대학교 무용학과의 발자취를 따라갑니다",
 
     year_1: "2003",
     event_1: "한성대학교 무용학과 설립",
@@ -73,9 +85,15 @@ try {
     event_6: "무용 아카이브 시스템 구축",
 
     contact_title: "문의하기",
-    contact_subtitle: "아카이브에 대한 문의사항이 있으시면 연락주세요",
+    contact_subtitle:
+      "아카이브에 대한 문의사항이 있으시면 연락주세요",
     contact_phone: "02-760-4107",
     contact_email: "dance@hansung.ac.kr",
+
+    project_title: "",
+    project_description: "",
+    team_members: "",
+    tech_stack: "",
   }
 
   const features = [
@@ -182,6 +200,7 @@ try {
               <h2 className="mb-4 text-2xl font-bold text-navy md:text-3xl">
                 주요 기능
               </h2>
+
               <p className="text-muted-foreground">
                 아카이브의 핵심 기능을 소개합니다
               </p>
@@ -266,6 +285,54 @@ try {
           </div>
         </section>
 
+        {/* Team Project */}
+        {(content.project_title ||
+          content.project_description ||
+          content.team_members ||
+          content.tech_stack) && (
+          <section className="bg-white py-16 md:py-24">
+            <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+              <div className="rounded-3xl border bg-card p-8 shadow-md">
+                <h2 className="mb-4 text-2xl font-bold text-navy md:text-3xl">
+                  {content.project_title || "팀플 프로젝트 소개"}
+                </h2>
+
+                {content.project_description && (
+                  <p className="whitespace-pre-line leading-relaxed text-muted-foreground">
+                    {content.project_description}
+                  </p>
+                )}
+
+                <div className="mt-8 grid gap-6 md:grid-cols-2">
+                  {content.team_members && (
+                    <div className="rounded-2xl bg-muted/30 p-5">
+                      <h3 className="mb-3 font-semibold text-foreground">
+                        팀원 및 역할
+                      </h3>
+
+                      <p className="whitespace-pre-line text-sm leading-7 text-muted-foreground">
+                        {content.team_members}
+                      </p>
+                    </div>
+                  )}
+
+                  {content.tech_stack && (
+                    <div className="rounded-2xl bg-muted/30 p-5">
+                      <h3 className="mb-3 font-semibold text-foreground">
+                        사용 기술
+                      </h3>
+
+                      <p className="whitespace-pre-line text-sm leading-7 text-muted-foreground">
+                        {content.tech_stack}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Contact */}
         <section className="bg-gradient-sky-vertical py-16 md:py-24">
           <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
@@ -280,6 +347,7 @@ try {
             <div className="inline-flex flex-col items-center rounded-2xl bg-card p-8 shadow-lg sm:flex-row sm:gap-12">
               <div className="mb-6 text-center sm:mb-0">
                 <p className="text-sm text-muted-foreground">전화번호</p>
+
                 <p className="text-lg font-semibold text-foreground">
                   {content.contact_phone}
                 </p>
@@ -289,6 +357,7 @@ try {
 
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">이메일</p>
+
                 <p className="text-lg font-semibold text-foreground">
                   {content.contact_email}
                 </p>

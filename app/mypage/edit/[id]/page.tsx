@@ -29,6 +29,7 @@ type EditMaterial = {
   year: string | null
   choreographer: string | null
   dancers: string | null
+  thumbnail_url: string | null
   user_id: string | null
 }
 
@@ -43,6 +44,7 @@ export default function EditMaterialPage({
   const [saving, setSaving] = useState(false)
   const [mediaTypeCode, setMediaTypeCode] = useState("")
   const [identifierPreview, setIdentifierPreview] = useState("")
+  const [thumbnailUploading, setThumbnailUploading] = useState(false)
 
   const [form, setForm] = useState({
     title: "",
@@ -65,6 +67,7 @@ export default function EditMaterialPage({
     year: "",
     choreographer: "",
     dancers: "",
+    thumbnail_url: "",
   })
 
   const genreCodeMap: Record<string, string> = {
@@ -80,43 +83,43 @@ export default function EditMaterialPage({
   }
 
   const generateIdentifier = async () => {
-  const year = form.year.trim()
-  const categoryCode = categoryCodeMap[form.category] || ""
-  const genreCode = genreCodeMap[form.genre] || ""
+    const year = form.year.trim()
+    const categoryCode = categoryCodeMap[form.category] || ""
+    const genreCode = genreCodeMap[form.genre] || ""
 
-  if (!year || !categoryCode || !genreCode || !mediaTypeCode) {
-    return form.identifier || ""
+    if (!year || !categoryCode || !genreCode || !mediaTypeCode) {
+      return form.identifier || ""
+    }
+
+    const prefix = `${year}${categoryCode}_${genreCode}_${mediaTypeCode}`
+
+    const { data, error } = await supabase
+      .from("자료")
+      .select("id, identifier")
+      .ilike("identifier", `${prefix}%`)
+      .neq("id", Number(id))
+
+    if (error) {
+      console.error("식별자 조회 오류:", error)
+      return `${prefix}01`
+    }
+
+    const usedNumbers =
+      data
+        ?.map((item) => {
+          const match = item.identifier?.match(new RegExp(`^${prefix}(\\d+)$`))
+          return match ? Number(match[1]) : null
+        })
+        .filter((num): num is number => num !== null) || []
+
+    let nextNumber = 1
+
+    while (usedNumbers.includes(nextNumber)) {
+      nextNumber++
+    }
+
+    return `${prefix}${String(nextNumber).padStart(2, "0")}`
   }
-
-  const prefix = `${year}${categoryCode}_${genreCode}_${mediaTypeCode}`
-
-  const { data, error } = await supabase
-    .from("자료")
-    .select("id, identifier")
-    .ilike("identifier", `${prefix}%`)
-    .neq("id", Number(id))
-
-  if (error) {
-    console.error("식별자 조회 오류:", error)
-    return `${prefix}01`
-  }
-
-  const usedNumbers =
-    data
-      ?.map((item) => {
-        const match = item.identifier?.match(new RegExp(`^${prefix}(\\d+)$`))
-        return match ? Number(match[1]) : null
-      })
-      .filter((num): num is number => num !== null) || []
-
-  let nextNumber = 1
-
-  while (usedNumbers.includes(nextNumber)) {
-    nextNumber++
-  }
-
-  return `${prefix}${String(nextNumber).padStart(2, "0")}`
-}
 
   useEffect(() => {
     const fetchItem = async () => {
@@ -185,6 +188,7 @@ export default function EditMaterialPage({
         year: item.year || "",
         choreographer: item.choreographer || "",
         dancers: item.dancers || "",
+        thumbnail_url: item.thumbnail_url || "",
       })
 
       setLoading(false)
@@ -207,6 +211,51 @@ export default function EditMaterialPage({
       ...prev,
       [key]: value,
     }))
+  }
+
+  const handleThumbnailUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0]
+
+    if (!file) return
+
+    try {
+      setThumbnailUploading(true)
+
+      const fileExt = file.name.split(".").pop()?.toLowerCase() || "jpg"
+
+      const fileName = `${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}.${fileExt}`
+
+      const filePath = `thumbnails/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from("performances")
+        .upload(filePath, file, {
+          contentType: file.type || "image/jpeg",
+          upsert: true,
+        })
+
+      if (uploadError) throw uploadError
+
+      const { data } = supabase.storage
+        .from("performances")
+        .getPublicUrl(filePath)
+
+      setForm((prev) => ({
+        ...prev,
+        thumbnail_url: data.publicUrl,
+      }))
+
+      alert("썸네일 업로드 완료")
+    } catch (err: any) {
+      console.error("썸네일 업로드 오류:", err)
+      alert(err.message || "썸네일 업로드 실패")
+    } finally {
+      setThumbnailUploading(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -355,6 +404,7 @@ export default function EditMaterialPage({
                   value={form.choreographer}
                   onChange={(v) => handleChange("choreographer", v)}
                 />
+
                 <InputField
                   label="참여 무용수"
                   value={form.dancers}
@@ -380,6 +430,39 @@ export default function EditMaterialPage({
                 />
               </div>
 
+              <div className="mb-5 rounded-xl border bg-slate-50 p-4">
+                <label className="mb-2 block text-sm font-semibold">
+                  썸네일 이미지 업로드
+                </label>
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleThumbnailUpload}
+                  className="w-full rounded-xl border bg-white p-3"
+                />
+
+                <p className="mt-2 text-sm text-slate-500">
+                  기존 영상의 목록 썸네일로 사용할 이미지를 업로드하세요.
+                </p>
+
+                {thumbnailUploading && (
+                  <p className="mt-3 text-sm text-sky-600">
+                    썸네일 업로드 중...
+                  </p>
+                )}
+
+                {form.thumbnail_url && (
+                  <div className="mt-4 overflow-hidden rounded-xl border bg-white">
+                    <img
+                      src={form.thumbnail_url}
+                      alt="썸네일 미리보기"
+                      className="h-52 w-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+
               <div className="grid gap-5 md:grid-cols-2">
                 <InputField
                   label="Title (제목) *"
@@ -393,7 +476,7 @@ export default function EditMaterialPage({
                   onChange={(v) => handleChange("creator", v)}
                 />
                 <InputField
-                  label="Subject (주제)"
+                  label="Subject (장르)"
                   value={form.subject}
                   onChange={(v) => handleChange("subject", v)}
                 />
@@ -464,7 +547,7 @@ export default function EditMaterialPage({
 
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || thumbnailUploading}
               className="w-full rounded-xl bg-amber-500 p-4 text-lg font-bold text-white hover:bg-amber-600 disabled:bg-amber-300"
             >
               {saving ? "수정 중..." : "수정 저장"}
