@@ -659,7 +659,7 @@ export default function UploadPage() {
                   onChange={(v) => handleChange("language", v)}
                 />
                 <InputField
-                  label="Relation"
+                  label="Relation (공연 구분)"
                   value={metadata.relation}
                   onChange={(v) => handleChange("relation", v)}
                 />

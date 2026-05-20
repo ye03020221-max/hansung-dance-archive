@@ -516,7 +516,7 @@ export default function EditMaterialPage({
                   onChange={(v) => handleChange("language", v)}
                 />
                 <InputField
-                  label="Relation"
+                  label="Relation (공연 구분)"
                   value={form.relation}
                   onChange={(v) => handleChange("relation", v)}
                 />
