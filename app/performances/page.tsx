@@ -375,7 +375,7 @@ function PerformancesContent() {
                         href={`/performances/${performance.id}`}
                         className="group overflow-hidden rounded-2xl bg-card shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
                       >
-                        <div className="relative h-[320px] overflow-hidden bg-black">
+                        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
                           {performance.thumbnail_url ? (
                             <Image
                               src={performance.thumbnail_url}
