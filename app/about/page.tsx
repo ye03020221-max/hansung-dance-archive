@@ -11,13 +11,15 @@ import { Footer } from "@/components/footer"
 import { createClient } from "@supabase/supabase-js"
 import AdminEditButton from "./admin-edit-button"
 
+export const dynamic = "force-dynamic"
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 export default async function AboutPage() {
-  let data = null
+  let data: any = null
 
   try {
     const result = await supabase
@@ -31,10 +33,9 @@ export default async function AboutPage() {
     console.error("about_content 불러오기 실패:", error)
   }
 
-  const content = data ?? {
+  const defaultContent = {
     hero_title: "아카이브 소개",
-    hero_subtitle:
-      "한성대학교 무용학과의 역사와 예술을 기록하고 보존합니다",
+    hero_subtitle: "한성대학교 무용학과의 역사와 예술을 기록하고 보존합니다",
 
     mission_badge: "Our Mission",
     mission_title: "소중한 예술적 유산을 보존합니다",
@@ -52,24 +53,16 @@ export default async function AboutPage() {
     archive_count_label: "아카이브 자료",
 
     feature_1_title: "디지털 보존",
-    feature_1_desc:
-      "소중한 공연 자료를 디지털화하여 영구적으로 보존합니다.",
-
+    feature_1_desc: "소중한 공연 자료를 디지털화하여 영구적으로 보존합니다.",
     feature_2_title: "열린 공유",
-    feature_2_desc:
-      "학과 구성원 모두가 자료를 업로드하고 공유할 수 있습니다.",
-
+    feature_2_desc: "학과 구성원 모두가 자료를 업로드하고 공유할 수 있습니다.",
     feature_3_title: "표준화된 메타데이터",
-    feature_3_desc:
-      "Dublin Core 표준을 기반으로 체계적으로 자료를 관리합니다.",
-
+    feature_3_desc: "Dublin Core 표준을 기반으로 체계적으로 자료를 관리합니다.",
     feature_4_title: "쉬운 검색",
-    feature_4_desc:
-      "연도, 장르, 공연 유형별로 원하는 자료를 빠르게 찾을 수 있습니다.",
+    feature_4_desc: "연도, 장르, 공연 유형별로 원하는 자료를 빠르게 찾을 수 있습니다.",
 
     timeline_title: "학과 연혁",
-    timeline_subtitle:
-      "한성대학교 무용학과의 발자취를 따라갑니다",
+    timeline_subtitle: "한성대학교 무용학과의 발자취를 따라갑니다",
 
     year_1: "2003",
     event_1: "한성대학교 무용학과 설립",
@@ -85,8 +78,7 @@ export default async function AboutPage() {
     event_6: "무용 아카이브 시스템 구축",
 
     contact_title: "문의하기",
-    contact_subtitle:
-      "아카이브에 대한 문의사항이 있으시면 연락주세요",
+    contact_subtitle: "아카이브에 대한 문의사항이 있으시면 연락주세요",
     contact_phone: "02-760-4107",
     contact_email: "dance@hansung.ac.kr",
 
@@ -96,27 +88,16 @@ export default async function AboutPage() {
     tech_stack: "",
   }
 
+  const content = {
+    ...defaultContent,
+    ...(data ?? {}),
+  }
+
   const features = [
-    {
-      icon: Archive,
-      title: content.feature_1_title,
-      description: content.feature_1_desc,
-    },
-    {
-      icon: Users,
-      title: content.feature_2_title,
-      description: content.feature_2_desc,
-    },
-    {
-      icon: BookOpen,
-      title: content.feature_3_title,
-      description: content.feature_3_desc,
-    },
-    {
-      icon: Target,
-      title: content.feature_4_title,
-      description: content.feature_4_desc,
-    },
+    { icon: Archive, title: content.feature_1_title, description: content.feature_1_desc },
+    { icon: Users, title: content.feature_2_title, description: content.feature_2_desc },
+    { icon: BookOpen, title: content.feature_3_title, description: content.feature_3_desc },
+    { icon: Target, title: content.feature_4_title, description: content.feature_4_desc },
   ]
 
   const timeline = [
@@ -133,22 +114,18 @@ export default async function AboutPage() {
       <Header />
 
       <main className="flex-1">
-        {/* Hero */}
         <section className="relative bg-gradient-sky py-16 md:py-24">
           <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
             <AdminEditButton />
-
             <h1 className="mb-4 text-3xl font-bold text-navy md:text-4xl">
               {content.hero_title}
             </h1>
-
             <p className="text-lg text-muted-foreground">
               {content.hero_subtitle}
             </p>
           </div>
         </section>
 
-        {/* Mission */}
         <section className="py-16 md:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid items-center gap-12 lg:grid-cols-2">
@@ -193,14 +170,12 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Features */}
         <section className="bg-muted/30 py-16 md:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mb-12 text-center">
               <h2 className="mb-4 text-2xl font-bold text-navy md:text-3xl">
                 주요 기능
               </h2>
-
               <p className="text-muted-foreground">
                 아카이브의 핵심 기능을 소개합니다
               </p>
@@ -215,11 +190,9 @@ export default async function AboutPage() {
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
                     <feature.icon className="h-6 w-6 text-primary" />
                   </div>
-
                   <h3 className="mb-2 font-semibold text-foreground">
                     {feature.title}
                   </h3>
-
                   <p className="text-sm text-muted-foreground">
                     {feature.description}
                   </p>
@@ -229,14 +202,12 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Timeline */}
         <section className="py-16 md:py-24">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
             <div className="mb-12 text-center">
               <h2 className="mb-4 text-2xl font-bold text-navy md:text-3xl">
                 {content.timeline_title}
               </h2>
-
               <p className="text-muted-foreground">
                 {content.timeline_subtitle}
               </p>
@@ -250,9 +221,7 @@ export default async function AboutPage() {
                   <div
                     key={`${item.year}-${index}`}
                     className={`relative flex items-center gap-6 ${
-                      index % 2 === 0
-                        ? "md:flex-row"
-                        : "md:flex-row-reverse"
+                      index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
                     }`}
                   >
                     <div className="absolute left-4 z-10 flex h-4 w-4 items-center justify-center md:left-1/2 md:-ml-2">
@@ -270,7 +239,6 @@ export default async function AboutPage() {
                         <span className="text-lg font-bold text-primary">
                           {item.year}
                         </span>
-
                         <p className="mt-1 text-muted-foreground">
                           {item.event}
                         </p>
@@ -285,55 +253,40 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* Team Project */}
-        {(content.project_title ||
-          content.project_description ||
-          content.team_members ||
-          content.tech_stack) && (
-          <section className="bg-white py-16 md:py-24">
-            <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-              <div className="rounded-3xl border bg-card p-8 shadow-md">
-                <h2 className="mb-4 text-2xl font-bold text-navy md:text-3xl">
-                  {content.project_title || "팀플 프로젝트 소개"}
-                </h2>
+        <section className="bg-white py-16 md:py-24">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+            <div className="rounded-3xl border bg-card p-8 shadow-md">
+              <h2 className="mb-4 text-2xl font-bold text-navy md:text-3xl">
+                {content.project_title || "팀플 프로젝트 소개"}
+              </h2>
 
-                {content.project_description && (
-                  <p className="whitespace-pre-line leading-relaxed text-muted-foreground">
-                    {content.project_description}
+              <p className="whitespace-pre-line leading-relaxed text-muted-foreground">
+                {content.project_description || "관리자 페이지에서 팀플 프로젝트 설명을 입력해주세요."}
+              </p>
+
+              <div className="mt-8 grid gap-6 md:grid-cols-2">
+                <div className="rounded-2xl bg-muted/30 p-5">
+                  <h3 className="mb-3 font-semibold text-foreground">
+                    팀원 및 역할
+                  </h3>
+                  <p className="whitespace-pre-line text-sm leading-7 text-muted-foreground">
+                    {content.team_members || "관리자 페이지에서 팀원 및 역할을 입력해주세요."}
                   </p>
-                )}
+                </div>
 
-                <div className="mt-8 grid gap-6 md:grid-cols-2">
-                  {content.team_members && (
-                    <div className="rounded-2xl bg-muted/30 p-5">
-                      <h3 className="mb-3 font-semibold text-foreground">
-                        팀원 및 역할
-                      </h3>
-
-                      <p className="whitespace-pre-line text-sm leading-7 text-muted-foreground">
-                        {content.team_members}
-                      </p>
-                    </div>
-                  )}
-
-                  {content.tech_stack && (
-                    <div className="rounded-2xl bg-muted/30 p-5">
-                      <h3 className="mb-3 font-semibold text-foreground">
-                        사용 기술
-                      </h3>
-
-                      <p className="whitespace-pre-line text-sm leading-7 text-muted-foreground">
-                        {content.tech_stack}
-                      </p>
-                    </div>
-                  )}
+                <div className="rounded-2xl bg-muted/30 p-5">
+                  <h3 className="mb-3 font-semibold text-foreground">
+                    사용 기술
+                  </h3>
+                  <p className="whitespace-pre-line text-sm leading-7 text-muted-foreground">
+                    {content.tech_stack || "관리자 페이지에서 사용 기술을 입력해주세요."}
+                  </p>
                 </div>
               </div>
             </div>
-          </section>
-        )}
+          </div>
+        </section>
 
-        {/* Contact */}
         <section className="bg-gradient-sky-vertical py-16 md:py-24">
           <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
             <h2 className="mb-4 text-2xl font-bold text-navy md:text-3xl">
@@ -347,7 +300,6 @@ export default async function AboutPage() {
             <div className="inline-flex flex-col items-center rounded-2xl bg-card p-8 shadow-lg sm:flex-row sm:gap-12">
               <div className="mb-6 text-center sm:mb-0">
                 <p className="text-sm text-muted-foreground">전화번호</p>
-
                 <p className="text-lg font-semibold text-foreground">
                   {content.contact_phone}
                 </p>
@@ -357,7 +309,6 @@ export default async function AboutPage() {
 
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">이메일</p>
-
                 <p className="text-lg font-semibold text-foreground">
                   {content.contact_email}
                 </p>
