@@ -28,8 +28,14 @@ type MyMaterial = {
   created_at: string | null
 }
 
+const PAGE_SIZE = 12
+
 export default function MyPage() {
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [totalCount, setTotalCount] = useState(0)
+
   const [userEmail, setUserEmail] = useState("")
   const [userId, setUserId] = useState("")
   const [materials, setMaterials] = useState<MyMaterial[]>([])
@@ -38,6 +44,44 @@ export default function MyPage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [changingPassword, setChangingPassword] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
+
+  const fetchMaterials = async (
+    targetUserId: string,
+    from = 0,
+    append = false
+  ) => {
+    if (append) {
+      setLoadingMore(true)
+    } else {
+      setLoading(true)
+    }
+
+    const to = from + PAGE_SIZE - 1
+
+    const { data, error, count } = await supabase
+      .from("자료")
+      .select(
+        "id, title, genre, type, year, file_url, thumbnail_url, file_name, created_at",
+        { count: "exact" }
+      )
+      .eq("user_id", targetUserId)
+      .order("created_at", { ascending: false })
+      .range(from, to)
+
+    if (error) {
+      console.error(error)
+      if (!append) setMaterials([])
+    } else {
+      const newData = data || []
+
+      setMaterials((prev) => (append ? [...prev, ...newData] : newData))
+      setTotalCount(count || 0)
+      setHasMore(from + newData.length < (count || 0))
+    }
+
+    setLoading(false)
+    setLoadingMore(false)
+  }
 
   useEffect(() => {
     const fetchMyPageData = async () => {
@@ -57,26 +101,16 @@ export default function MyPage() {
       setUserEmail(user.email || "")
       setUserId(user.id)
 
-      const { data, error } = await supabase
-        .from("자료")
-        .select(
-          "id, title, genre, type, year, file_url, thumbnail_url, file_name, created_at"
-        )
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-
-      if (error) {
-        console.error(error)
-        setMaterials([])
-      } else {
-        setMaterials(data || [])
-      }
-
-      setLoading(false)
+      await fetchMaterials(user.id, 0, false)
     }
 
     fetchMyPageData()
   }, [])
+
+  const loadMore = async () => {
+    if (!userId || loadingMore) return
+    await fetchMaterials(userId, materials.length, true)
+  }
 
   const isImageFile = (url: string | null) => {
     if (!url) return false
@@ -126,6 +160,8 @@ export default function MyPage() {
         prev.filter((material) => material.id !== item.id)
       )
 
+      setTotalCount((prev) => Math.max(prev - 1, 0))
+
       alert("삭제 완료")
     } catch (err: any) {
       alert(err.message || "삭제 실패")
@@ -172,8 +208,8 @@ export default function MyPage() {
   }
 
   const materialCountText = useMemo(() => {
-    return `${materials.length}개`
-  }, [materials.length])
+    return `${totalCount}개`
+  }, [totalCount])
 
   if (loading) {
     return (
@@ -269,7 +305,7 @@ export default function MyPage() {
                   <div>
                     <h2 className="text-xl font-bold">내가 올린 자료</h2>
                     <p className="mt-1 text-sm text-slate-500">
-                      최근 업로드 순으로 보여줘요.
+                      최근 업로드 순으로 보여줘요. 현재 {materials.length}개 표시 중
                     </p>
                   </div>
 
@@ -286,120 +322,135 @@ export default function MyPage() {
                     업로드 자료 없음
                   </div>
                 ) : (
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    {materials.map((item) => (
-                      <div
-                        key={item.id}
-                        className="overflow-hidden rounded-2xl border bg-white shadow-sm"
-                      >
-                        <div className="relative aspect-[4/3] bg-slate-100">
-                          {item.thumbnail_url ? (
-                            <Image
-                              src={item.thumbnail_url}
-                              alt={item.title || "썸네일"}
-                              fill
-                              className="object-cover"
-                            />
-                          ) : item.file_url ? (
-                            isVideoFile(item.file_url) ? (
-                              <video
-                                src={item.file_url}
-                                className="h-full w-full object-cover"
-                                muted
-                                playsInline
-                                preload="metadata"
-                              />
-                            ) : isImageFile(item.file_url) ? (
+                  <>
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      {materials.map((item) => (
+                        <div
+                          key={item.id}
+                          className="overflow-hidden rounded-2xl border bg-white shadow-sm"
+                        >
+                          <div className="relative aspect-[4/3] bg-slate-100">
+                            {item.thumbnail_url ? (
                               <Image
-                                src={item.file_url}
-                                alt={item.title || "자료"}
+                                src={item.thumbnail_url}
+                                alt={item.title || "썸네일"}
                                 fill
                                 className="object-cover"
                               />
+                            ) : item.file_url ? (
+                              isVideoFile(item.file_url) ? (
+                                <video
+                                  src={item.file_url}
+                                  className="h-full w-full object-cover"
+                                  muted
+                                  playsInline
+                                  preload="metadata"
+                                />
+                              ) : isImageFile(item.file_url) ? (
+                                <Image
+                                  src={item.file_url}
+                                  alt={item.title || "자료"}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-slate-400">
+                                  <FileText className="h-10 w-10" />
+                                </div>
+                              )
                             ) : (
                               <div className="flex h-full w-full items-center justify-center text-slate-400">
-                                <FileText className="h-10 w-10" />
+                                <ImageIcon className="h-10 w-10" />
                               </div>
-                            )
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-slate-400">
-                              <ImageIcon className="h-10 w-10" />
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="p-4">
-                          <div className="mb-2 flex flex-wrap gap-2">
-                            {item.genre && (
-                              <span className="rounded-full bg-sky-100 px-2 py-1 text-xs font-medium text-sky-700">
-                                {item.genre}
-                              </span>
-                            )}
-
-                            {item.type && (
-                              <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
-                                {item.type}
-                              </span>
                             )}
                           </div>
 
-                          <h3 className="text-lg font-bold">
-                            {item.title || "제목 없음"}
-                          </h3>
-
-                          <p className="mt-2 text-sm text-slate-500">
-                            연도: {item.year || "미입력"}
-                          </p>
-
-                          <div className="mt-4 grid grid-cols-2 gap-2">
-                            <Link
-                              href={`/performances/${item.id}`}
-                              className="rounded-xl border px-3 py-2 text-center text-sm font-semibold"
-                            >
-                              상세
-                            </Link>
-
-                            <Link
-                              href={`/mypage/edit/${item.id}`}
-                              className="rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-center text-sm font-semibold text-sky-700"
-                            >
-                              수정
-                            </Link>
-
-                            {item.file_url ? (
-                              <a
-                                href={item.file_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-3 py-2 text-white"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </a>
-                            ) : (
-                              <button
-                                disabled
-                                className="rounded-xl bg-slate-200 px-3 py-2 text-slate-400"
-                              >
-                                없음
-                              </button>
-                            )}
-
-                            <button
-                              onClick={() => handleDelete(item)}
-                              disabled={deletingId === item.id}
-                              className="inline-flex items-center justify-center rounded-xl bg-red-500 px-3 py-2 text-white"
-                            >
-                              {deletingId === item.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
+                          <div className="p-4">
+                            <div className="mb-2 flex flex-wrap gap-2">
+                              {item.genre && (
+                                <span className="rounded-full bg-sky-100 px-2 py-1 text-xs font-medium text-sky-700">
+                                  {item.genre}
+                                </span>
                               )}
-                            </button>
+
+                              {item.type && (
+                                <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
+                                  {item.type}
+                                </span>
+                              )}
+                            </div>
+
+                            <h3 className="text-lg font-bold">
+                              {item.title || "제목 없음"}
+                            </h3>
+
+                            <p className="mt-2 text-sm text-slate-500">
+                              연도: {item.year || "미입력"}
+                            </p>
+
+                            <div className="mt-4 grid grid-cols-2 gap-2">
+                              <Link
+                                href={`/performances/${item.id}`}
+                                className="rounded-xl border px-3 py-2 text-center text-sm font-semibold"
+                              >
+                                상세
+                              </Link>
+
+                              <Link
+                                href={`/mypage/edit/${item.id}`}
+                                className="rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-center text-sm font-semibold text-sky-700"
+                              >
+                                수정
+                              </Link>
+
+                              {item.file_url ? (
+                                <a
+                                  href={item.file_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-3 py-2 text-white"
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </a>
+                              ) : (
+                                <button
+                                  disabled
+                                  className="rounded-xl bg-slate-200 px-3 py-2 text-slate-400"
+                                >
+                                  없음
+                                </button>
+                              )}
+
+                              <button
+                                onClick={() => handleDelete(item)}
+                                disabled={deletingId === item.id}
+                                className="inline-flex items-center justify-center rounded-xl bg-red-500 px-3 py-2 text-white"
+                              >
+                                {deletingId === item.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </button>
+                            </div>
                           </div>
                         </div>
+                      ))}
+                    </div>
+
+                    {hasMore && (
+                      <div className="mt-8 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={loadMore}
+                          disabled={loadingMore}
+                          className="rounded-xl border border-sky-300 bg-sky-50 px-6 py-3 text-sm font-semibold text-sky-700 hover:bg-sky-100 disabled:opacity-60"
+                        >
+                          {loadingMore ? "불러오는 중..." : "더보기"}
+                        </button>
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
