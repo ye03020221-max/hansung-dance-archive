@@ -403,7 +403,7 @@ export default function PerformanceDetailPage({
                   <MetadataItem label="Identifier (식별자)" value={performance.identifier} />
                   <MetadataItem label="Title (제목)" value={performance.title} />
                   <MetadataItem label="Creator (제작자)" value={performance.creator} />
-                  <MetadataItem label="Subject (주제)" value={performance.subject} />
+                  <MetadataItem label="Subject (장르)" value={performance.subject} />
                   <MetadataItem label="Description (설명)" value={performance.description} />
                   <MetadataItem label="Publisher (발행처)" value={performance.publisher} />
                   <MetadataItem label="Contributor (기여자)" value={performance.contributor} />
