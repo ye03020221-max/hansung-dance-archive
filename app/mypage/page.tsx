@@ -23,6 +23,7 @@ type MyMaterial = {
   type: string | null
   year: string | null
   file_url: string | null
+  thumbnail_url: string | null
   file_name: string | null
   created_at: string | null
 }
@@ -58,7 +59,9 @@ export default function MyPage() {
 
       const { data, error } = await supabase
         .from("자료")
-        .select("id, title, genre, type, year, file_url, file_name, created_at")
+        .select(
+          "id, title, genre, type, year, file_url, thumbnail_url, file_name, created_at"
+        )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
 
@@ -194,23 +197,18 @@ export default function MyPage() {
       <main className="flex-1 px-4 py-8 md:px-8">
         <div className="mx-auto max-w-6xl space-y-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">
-              마이페이지
-            </h1>
+            <h1 className="text-3xl font-bold text-slate-900">마이페이지</h1>
             <p className="mt-2 text-slate-500">
               내 계정 정보와 내가 업로드한 자료를 확인할 수 있어요.
             </p>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-3">
-            {/* 왼쪽 */}
             <div className="space-y-6 lg:col-span-1">
               <div className="rounded-3xl border bg-white p-6 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">
                   <User className="h-5 w-5 text-sky-600" />
-                  <h2 className="text-xl font-bold">
-                    계정 정보
-                  </h2>
+                  <h2 className="text-xl font-bold">계정 정보</h2>
                 </div>
 
                 <div className="space-y-3 text-sm">
@@ -226,9 +224,7 @@ export default function MyPage() {
 
                   <div>
                     <p className="text-slate-500">사용자 ID</p>
-                    <p className="break-all text-xs">
-                      {userId}
-                    </p>
+                    <p className="break-all text-xs">{userId}</p>
                   </div>
                 </div>
               </div>
@@ -236,22 +232,15 @@ export default function MyPage() {
               <div className="rounded-3xl border bg-white p-6 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">
                   <Lock className="h-5 w-5 text-sky-600" />
-                  <h2 className="text-xl font-bold">
-                    비밀번호 변경
-                  </h2>
+                  <h2 className="text-xl font-bold">비밀번호 변경</h2>
                 </div>
 
-                <form
-                  onSubmit={handlePasswordChange}
-                  className="space-y-4"
-                >
+                <form onSubmit={handlePasswordChange} className="space-y-4">
                   <input
                     type="password"
                     placeholder="새 비밀번호"
                     value={newPassword}
-                    onChange={(e) =>
-                      setNewPassword(e.target.value)
-                    }
+                    onChange={(e) => setNewPassword(e.target.value)}
                     className="w-full rounded-xl border p-3"
                   />
 
@@ -259,9 +248,7 @@ export default function MyPage() {
                     type="password"
                     placeholder="새 비밀번호 확인"
                     value={confirmPassword}
-                    onChange={(e) =>
-                      setConfirmPassword(e.target.value)
-                    }
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full rounded-xl border p-3"
                   />
 
@@ -270,22 +257,17 @@ export default function MyPage() {
                     disabled={changingPassword}
                     className="w-full rounded-xl bg-sky-600 p-3 font-bold text-white hover:bg-sky-700"
                   >
-                    {changingPassword
-                      ? "변경 중..."
-                      : "비밀번호 변경"}
+                    {changingPassword ? "변경 중..." : "비밀번호 변경"}
                   </button>
                 </form>
               </div>
             </div>
 
-            {/* 오른쪽 */}
             <div className="lg:col-span-2">
               <div className="rounded-3xl border bg-white p-6 shadow-sm">
                 <div className="mb-6 flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-bold">
-                      내가 올린 자료
-                    </h2>
+                    <h2 className="text-xl font-bold">내가 올린 자료</h2>
                     <p className="mt-1 text-sm text-slate-500">
                       최근 업로드 순으로 보여줘요.
                     </p>
@@ -310,9 +292,15 @@ export default function MyPage() {
                         key={item.id}
                         className="overflow-hidden rounded-2xl border bg-white shadow-sm"
                       >
-                        {/* 썸네일 수정 완료 */}
                         <div className="relative aspect-[4/3] bg-slate-100">
-                          {item.file_url ? (
+                          {item.thumbnail_url ? (
+                            <Image
+                              src={item.thumbnail_url}
+                              alt={item.title || "썸네일"}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : item.file_url ? (
                             isVideoFile(item.file_url) ? (
                               <video
                                 src={item.file_url}
