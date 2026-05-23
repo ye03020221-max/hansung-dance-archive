@@ -14,6 +14,7 @@ import {
   Loader2,
   ExternalLink,
   Trash2,
+  Search,
 } from "lucide-react"
 
 type MyMaterial = {
@@ -40,6 +41,10 @@ export default function MyPage() {
   const [userId, setUserId] = useState("")
   const [materials, setMaterials] = useState<MyMaterial[]>([])
 
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedType, setSelectedType] = useState("")
+  const [selectedGenre, setSelectedGenre] = useState("")
+
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [changingPassword, setChangingPassword] = useState(false)
@@ -58,23 +63,43 @@ export default function MyPage() {
 
     const to = from + PAGE_SIZE - 1
 
-    const { data, error, count } = await supabase
+    let query = supabase
       .from("자료")
       .select(
         "id, title, genre, type, year, file_url, thumbnail_url, file_name, created_at",
         { count: "exact" }
       )
       .eq("user_id", targetUserId)
+
+    if (searchQuery.trim()) {
+      query = query.ilike("title", `%${searchQuery.trim()}%`)
+    }
+
+    if (selectedType) {
+      query = query.eq("type", selectedType)
+    }
+
+    if (selectedGenre) {
+      query = query.eq("genre", selectedGenre)
+    }
+
+    const { data, error, count } = await query
       .order("created_at", { ascending: false })
       .range(from, to)
 
     if (error) {
       console.error(error)
-      if (!append) setMaterials([])
+
+      if (!append) {
+        setMaterials([])
+      }
     } else {
       const newData = data || []
 
-      setMaterials((prev) => (append ? [...prev, ...newData] : newData))
+      setMaterials((prev) =>
+        append ? [...prev, ...newData] : newData
+      )
+
       setTotalCount(count || 0)
       setHasMore(from + newData.length < (count || 0))
     }
@@ -107,9 +132,22 @@ export default function MyPage() {
     fetchMyPageData()
   }, [])
 
+  useEffect(() => {
+    if (!userId) return
+
+    fetchMaterials(userId, 0, false)
+  }, [searchQuery, selectedType, selectedGenre])
+
   const loadMore = async () => {
     if (!userId || loadingMore) return
+
     await fetchMaterials(userId, materials.length, true)
+  }
+
+  const clearFilters = () => {
+    setSearchQuery("")
+    setSelectedType("")
+    setSelectedGenre("")
   }
 
   const isImageFile = (url: string | null) => {
@@ -146,7 +184,9 @@ export default function MyPage() {
       const storagePath = getStoragePathFromUrl(item.file_url)
 
       if (storagePath) {
-        await supabase.storage.from("performances").remove([storagePath])
+        await supabase.storage
+          .from("performances")
+          .remove([storagePath])
       }
 
       const { error } = await supabase
@@ -198,6 +238,7 @@ export default function MyPage() {
       if (error) throw error
 
       alert("비밀번호 변경 완료")
+
       setNewPassword("")
       setConfirmPassword("")
     } catch (err: any) {
@@ -215,12 +256,14 @@ export default function MyPage() {
     return (
       <div className="flex min-h-screen flex-col">
         <Header />
+
         <main className="flex flex-1 items-center justify-center bg-slate-50">
           <div className="flex items-center gap-2 text-slate-500">
             <Loader2 className="h-5 w-5 animate-spin" />
             불러오는 중...
           </div>
         </main>
+
         <Footer />
       </div>
     )
@@ -233,7 +276,10 @@ export default function MyPage() {
       <main className="flex-1 px-4 py-8 md:px-8">
         <div className="mx-auto max-w-6xl space-y-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">마이페이지</h1>
+            <h1 className="text-3xl font-bold text-slate-900">
+              마이페이지
+            </h1>
+
             <p className="mt-2 text-slate-500">
               내 계정 정보와 내가 업로드한 자료를 확인할 수 있어요.
             </p>
@@ -244,6 +290,7 @@ export default function MyPage() {
               <div className="rounded-3xl border bg-white p-6 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">
                   <User className="h-5 w-5 text-sky-600" />
+
                   <h2 className="text-xl font-bold">계정 정보</h2>
                 </div>
 
@@ -268,15 +315,23 @@ export default function MyPage() {
               <div className="rounded-3xl border bg-white p-6 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">
                   <Lock className="h-5 w-5 text-sky-600" />
-                  <h2 className="text-xl font-bold">비밀번호 변경</h2>
+
+                  <h2 className="text-xl font-bold">
+                    비밀번호 변경
+                  </h2>
                 </div>
 
-                <form onSubmit={handlePasswordChange} className="space-y-4">
+                <form
+                  onSubmit={handlePasswordChange}
+                  className="space-y-4"
+                >
                   <input
                     type="password"
                     placeholder="새 비밀번호"
                     value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    onChange={(e) =>
+                      setNewPassword(e.target.value)
+                    }
                     className="w-full rounded-xl border p-3"
                   />
 
@@ -284,7 +339,9 @@ export default function MyPage() {
                     type="password"
                     placeholder="새 비밀번호 확인"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) =>
+                      setConfirmPassword(e.target.value)
+                    }
                     className="w-full rounded-xl border p-3"
                   />
 
@@ -293,7 +350,9 @@ export default function MyPage() {
                     disabled={changingPassword}
                     className="w-full rounded-xl bg-sky-600 p-3 font-bold text-white hover:bg-sky-700"
                   >
-                    {changingPassword ? "변경 중..." : "비밀번호 변경"}
+                    {changingPassword
+                      ? "변경 중..."
+                      : "비밀번호 변경"}
                   </button>
                 </form>
               </div>
@@ -303,9 +362,13 @@ export default function MyPage() {
               <div className="rounded-3xl border bg-white p-6 shadow-sm">
                 <div className="mb-6 flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-bold">내가 올린 자료</h2>
+                    <h2 className="text-xl font-bold">
+                      내가 올린 자료
+                    </h2>
+
                     <p className="mt-1 text-sm text-slate-500">
-                      최근 업로드 순으로 보여줘요. 현재 {materials.length}개 표시 중
+                      최근 업로드 순으로 보여줘요. 현재{" "}
+                      {materials.length}개 표시 중
                     </p>
                   </div>
 
@@ -317,9 +380,72 @@ export default function MyPage() {
                   </Link>
                 </div>
 
+                <div className="mb-6 rounded-2xl bg-slate-50 p-4">
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div className="relative md:col-span-1">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                      <input
+                        value={searchQuery}
+                        onChange={(e) =>
+                          setSearchQuery(e.target.value)
+                        }
+                        placeholder="자료 이름 검색"
+                        className="w-full rounded-xl border bg-white py-3 pl-10 pr-3 text-sm outline-none focus:border-sky-400"
+                      />
+                    </div>
+
+                    <select
+                      value={selectedType}
+                      onChange={(e) =>
+                        setSelectedType(e.target.value)
+                      }
+                      className="w-full rounded-xl border bg-white p-3 text-sm outline-none focus:border-sky-400"
+                    >
+                      <option value="">자료 유형 전체</option>
+                      <option value="photo">사진</option>
+                      <option value="video">동영상</option>
+                      <option value="pamphlet">팜플렛</option>
+                      <option value="poster">포스터</option>
+                      <option value="document">문서</option>
+                    </select>
+
+                    <select
+                      value={selectedGenre}
+                      onChange={(e) =>
+                        setSelectedGenre(e.target.value)
+                      }
+                      className="w-full rounded-xl border bg-white p-3 text-sm outline-none focus:border-sky-400"
+                    >
+                      <option value="">장르 전체</option>
+                      <option value="한국무용">
+                        한국무용
+                      </option>
+                      <option value="현대무용">
+                        현대무용
+                      </option>
+                      <option value="발레">발레</option>
+                    </select>
+                  </div>
+
+                  {(searchQuery ||
+                    selectedType ||
+                    selectedGenre) && (
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="text-sm font-semibold text-sky-600 hover:underline"
+                      >
+                        검색/필터 초기화
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 {materials.length === 0 ? (
                   <div className="rounded-2xl bg-slate-50 py-16 text-center">
-                    업로드 자료 없음
+                    검색 결과 또는 업로드 자료 없음
                   </div>
                 ) : (
                   <>
@@ -340,7 +466,7 @@ export default function MyPage() {
                             ) : item.file_url ? (
                               isVideoFile(item.file_url) ? (
                                 <video
-                                  src={item.file_url}
+                                  src={`${item.file_url}#t=30`}
                                   className="h-full w-full object-cover"
                                   muted
                                   playsInline
@@ -446,7 +572,9 @@ export default function MyPage() {
                           disabled={loadingMore}
                           className="rounded-xl border border-sky-300 bg-sky-50 px-6 py-3 text-sm font-semibold text-sky-700 hover:bg-sky-100 disabled:opacity-60"
                         >
-                          {loadingMore ? "불러오는 중..." : "더보기"}
+                          {loadingMore
+                            ? "불러오는 중..."
+                            : "더보기"}
                         </button>
                       </div>
                     )}
