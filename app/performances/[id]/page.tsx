@@ -41,6 +41,7 @@ type PerformanceDetail = {
   rights: string | null
   source: string | null
   file_url: string | null
+  thumbnail_url: string | null
   file_name: string | null
   created_at?: string | null
 }
@@ -230,17 +231,28 @@ export default function PerformanceDetailPage({
           <div className="grid gap-8 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">
               <div className="overflow-hidden rounded-2xl bg-card shadow-lg">
-                {performance.file_url ? (
+                {performance.thumbnail_url ? (
+                  <div className="relative bg-foreground/5">
+                    <Image
+                      src={performance.thumbnail_url}
+                      alt={performance.title || "공연 자료"}
+                      width={1200}
+                      height={1600}
+                      priority
+                      className="h-auto w-full object-contain bg-white"
+                    />
+                  </div>
+                ) : performance.file_url ? (
                   isImageFile(performance.file_url) ? (
                     <div className="relative bg-foreground/5">
                       <Image
-  src={performance.file_url}
-  alt={performance.title || "공연 자료"}
-  width={1200}
-  height={1600}
-  priority
-  className="h-auto w-full object-contain bg-white"
-/>
+                        src={performance.file_url}
+                        alt={performance.title || "공연 자료"}
+                        width={1200}
+                        height={1600}
+                        priority
+                        className="h-auto w-full object-contain bg-white"
+                      />
                     </div>
                   ) : isVideoFile(performance.file_url) ? (
                     <div className="bg-black p-2 md:p-3">
