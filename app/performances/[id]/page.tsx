@@ -231,7 +231,17 @@ export default function PerformanceDetailPage({
           <div className="grid gap-8 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">
               <div className="overflow-hidden rounded-2xl bg-card shadow-lg">
-                {performance.thumbnail_url ? (
+                {performance.file_url && isVideoFile(performance.file_url) ? (
+                  <div className="bg-black p-2 md:p-3">
+                    <video
+                      src={performance.file_url}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      className="mx-auto h-auto max-h-[80vh] w-full rounded-xl object-contain bg-black"
+                    />
+                  </div>
+                ) : performance.thumbnail_url ? (
                   <div className="relative bg-foreground/5">
                     <Image
                       src={performance.thumbnail_url}
@@ -252,16 +262,6 @@ export default function PerformanceDetailPage({
                         height={1600}
                         priority
                         className="h-auto w-full object-contain bg-white"
-                      />
-                    </div>
-                  ) : isVideoFile(performance.file_url) ? (
-                    <div className="bg-black p-2 md:p-3">
-                      <video
-                        src={performance.file_url}
-                        controls
-                        playsInline
-                        preload="metadata"
-                        className="mx-auto h-auto max-h-[80vh] w-full rounded-xl object-contain bg-black"
                       />
                     </div>
                   ) : (
