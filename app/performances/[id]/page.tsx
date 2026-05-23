@@ -234,7 +234,7 @@ export default function PerformanceDetailPage({
                 {performance.file_url && isVideoFile(performance.file_url) ? (
                   <div className="bg-black p-2 md:p-3">
                     <video
-                      src={performance.file_url}
+                      src={`${performance.file_url}#t=30`}
                       controls
                       playsInline
                       preload="metadata"
