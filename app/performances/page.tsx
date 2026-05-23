@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { Filter, Calendar, X, Search, ImageIcon, FileText } from "lucide-react"
+import { Filter, Calendar, X, Search, ImageIcon } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -53,8 +53,6 @@ function PerformancesContent() {
 
   const [performances, setPerformances] = useState<PerformanceItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [hasMore, setHasMore] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "")
@@ -63,53 +61,44 @@ function PerformancesContent() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const [yearRange, setYearRange] = useState([2015, 2035])
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   useEffect(() => {
     const q = searchParams.get("q") || ""
     setSearchQuery(q)
+    setVisibleCount(PAGE_SIZE)
   }, [searchParams])
 
-  const fetchPerformances = async (from = 0, append = false) => {
-    if (append) {
-      setLoadingMore(true)
-    } else {
-      setLoading(true)
-    }
+  const fetchPerformances = async () => {
+    setLoading(true)
 
     const { data, error, count } = await supabase
       .from("자료")
-      .select("id, title, year, type, genre, category, file_url, thumbnail_url, created_at", {
-        count: "exact",
-      })
+      .select(
+        "id, title, year, type, genre, category, file_url, thumbnail_url, created_at",
+        { count: "exact" }
+      )
       .order("year", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(1000)
 
     if (error) {
       console.error("자료 불러오기 오류:", error)
-      if (!append) setPerformances([])
+      setPerformances([])
       setLoading(false)
-      setLoadingMore(false)
       return
     }
 
     const newData = data || []
 
-    setPerformances((prev) => (append ? [...prev, ...newData] : newData))
+    setPerformances(newData)
     setTotalCount(count || newData.length)
-    setHasMore(false)
-
     setLoading(false)
-    setLoadingMore(false)
   }
 
   useEffect(() => {
-    fetchPerformances(0, false)
+    fetchPerformances()
   }, [])
-
-  const loadMore = () => {
-    fetchPerformances(performances.length, true)
-  }
 
   const isImageFile = (url: string | null) => {
     if (!url) return false
@@ -134,12 +123,14 @@ function PerformancesContent() {
   const categories = ["졸업공연", "H-Festa", "창작발표회"]
 
   const toggleGenre = (genre: string) => {
+    setVisibleCount(PAGE_SIZE)
     setSelectedGenres((prev) =>
       prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]
     )
   }
 
   const toggleCategory = (category: string) => {
+    setVisibleCount(PAGE_SIZE)
     setSelectedCategories((prev) =>
       prev.includes(category)
         ? prev.filter((c) => c !== category)
@@ -148,6 +139,7 @@ function PerformancesContent() {
   }
 
   const toggleType = (type: string) => {
+    setVisibleCount(PAGE_SIZE)
     setSelectedTypes((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     )
@@ -180,10 +172,14 @@ function PerformancesContent() {
       selectedTypes.length === 0 || selectedTypes.includes(p.type || "")
 
     const matchesYear =
-      !safeYearNumber || (safeYearNumber >= yearRange[0] && safeYearNumber <= yearRange[1])
+      !safeYearNumber ||
+      (safeYearNumber >= yearRange[0] && safeYearNumber <= yearRange[1])
 
     return matchesSearch && matchesGenre && matchesCategory && matchesType && matchesYear
   })
+
+  const visiblePerformances = filteredPerformances.slice(0, visibleCount)
+  const hasMoreVisible = visibleCount < filteredPerformances.length
 
   const clearFilters = () => {
     setSelectedGenres([])
@@ -191,6 +187,7 @@ function PerformancesContent() {
     setSelectedTypes([])
     setYearRange([2015, 2035])
     setSearchQuery("")
+    setVisibleCount(PAGE_SIZE)
   }
 
   const FilterSidebar = () => (
@@ -203,7 +200,10 @@ function PerformancesContent() {
             type="search"
             placeholder="작품명, 장르, 공연 구분, 자료 유형, 연도 검색..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setVisibleCount(PAGE_SIZE)
+            }}
             className="pl-10"
           />
         </div>
@@ -260,7 +260,10 @@ function PerformancesContent() {
         <div className="px-2">
           <Slider
             value={yearRange}
-            onValueChange={(value) => setYearRange(value as number[])}
+            onValueChange={(value) => {
+              setYearRange(value as number[])
+              setVisibleCount(PAGE_SIZE)
+            }}
             min={2015}
             max={2035}
             step={1}
@@ -344,9 +347,19 @@ function PerformancesContent() {
                 <p className="text-sm text-muted-foreground">
                   총{" "}
                   <span className="font-semibold text-foreground">
-                    {totalCount || filteredPerformances.length}
+                    {searchQuery ||
+                    selectedGenres.length > 0 ||
+                    selectedCategories.length > 0 ||
+                    selectedTypes.length > 0
+                      ? filteredPerformances.length
+                      : totalCount}
                   </span>
                   개의 작품
+                  {filteredPerformances.length > 0 && (
+                    <span className="ml-2 text-xs">
+                      현재 {visiblePerformances.length}개 표시
+                    </span>
+                  )}
                 </p>
 
                 {(selectedGenres.length > 0 ||
@@ -369,7 +382,7 @@ function PerformancesContent() {
               ) : (
                 <>
                   <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                    {filteredPerformances.map((performance) => (
+                    {visiblePerformances.map((performance) => (
                       <Link
                         key={performance.id}
                         href={`/performances/${performance.id}`}
@@ -438,6 +451,18 @@ function PerformancesContent() {
                       </Link>
                     ))}
                   </div>
+
+                  {hasMoreVisible && (
+                    <div className="mt-8 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+                        className="rounded-xl border border-sky-300 bg-sky-50 px-6 py-3 text-sm font-semibold text-sky-700 hover:bg-sky-100"
+                      >
+                        더보기
+                      </button>
+                    </div>
+                  )}
 
                   {filteredPerformances.length === 0 && (
                     <div className="flex flex-col items-center justify-center rounded-2xl bg-card py-16 text-center">
