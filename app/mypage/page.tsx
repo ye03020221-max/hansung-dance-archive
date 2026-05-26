@@ -138,6 +138,19 @@ export default function MyPage() {
     fetchMaterials(userId, 0, false)
   }, [searchQuery, selectedType, selectedGenre])
 
+  useEffect(() => {
+    if (!loading && materials.length > 0) {
+      const savedScroll = sessionStorage.getItem("mypage-scroll")
+
+      if (savedScroll) {
+        setTimeout(() => {
+          window.scrollTo(0, Number(savedScroll))
+          sessionStorage.removeItem("mypage-scroll")
+        }, 100)
+      }
+    }
+  }, [loading, materials])
+
   const loadMore = async () => {
     if (!userId || loadingMore) return
 
@@ -524,6 +537,12 @@ export default function MyPage() {
 
                               <Link
                                 href={`/mypage/edit/${item.id}`}
+                                onClick={() => {
+                                  sessionStorage.setItem(
+                                    "mypage-scroll",
+                                    String(window.scrollY)
+                                  )
+                                }}
                                 className="rounded-xl border border-sky-300 bg-sky-50 px-3 py-2 text-center text-sm font-semibold text-sky-700"
                               >
                                 수정
