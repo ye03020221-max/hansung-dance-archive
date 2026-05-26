@@ -83,6 +83,14 @@ export default function EditMaterialPage({
     "H-Festa": "HD",
   }
 
+  const getFileNameFromUrl = (url: string | null) => {
+    if (!url) return ""
+
+    const cleanUrl = url.split("?")[0]
+    const parts = cleanUrl.split("/")
+    return decodeURIComponent(parts[parts.length - 1] || "")
+  }
+
   const generateIdentifier = async () => {
     const year = form.year.trim()
     const categoryCode = categoryCodeMap[form.category] || ""
@@ -151,6 +159,8 @@ export default function EditMaterialPage({
       }
 
       const item = data as EditMaterial
+
+      setSelectedThumbnailName(getFileNameFromUrl(item.thumbnail_url))
 
       const mediaCodeMatch = item.identifier?.match(
         /_(VR|VF|PP|PB|PT|PR|BK|PG)\d+$/
