@@ -45,6 +45,7 @@ export default function EditMaterialPage({
   const [mediaTypeCode, setMediaTypeCode] = useState("")
   const [identifierPreview, setIdentifierPreview] = useState("")
   const [thumbnailUploading, setThumbnailUploading] = useState(false)
+  const [selectedThumbnailName, setSelectedThumbnailName] = useState("")
 
   const [form, setForm] = useState({
     title: "",
@@ -219,6 +220,8 @@ export default function EditMaterialPage({
     const file = e.target.files?.[0]
 
     if (!file) return
+
+    setSelectedThumbnailName(file.name)
 
     try {
       setThumbnailUploading(true)
@@ -435,12 +438,20 @@ export default function EditMaterialPage({
                   썸네일 이미지 업로드
                 </label>
 
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleThumbnailUpload}
-                  className="w-full rounded-xl border bg-white p-3"
-                />
+                <label className="flex w-full cursor-pointer items-center justify-between rounded-xl border bg-white p-3">
+                  <span className="truncate text-slate-700">
+                    {selectedThumbnailName || "선택된 파일 없음"}
+                  </span>
+                  <span className="ml-4 shrink-0 rounded-lg bg-sky-100 px-3 py-1 text-sm font-semibold text-sky-700">
+                    파일 선택
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleThumbnailUpload}
+                    className="hidden"
+                  />
+                </label>
 
                 <p className="mt-2 text-sm text-slate-500">
                   기존 영상의 목록 썸네일로 사용할 이미지를 업로드하세요.
