@@ -252,7 +252,7 @@ export default function MyPage() {
     return `${totalCount}개`
   }, [totalCount])
 
-  if (loading) {
+  if (loading && materials.length === 0) {
     return (
       <div className="flex min-h-screen flex-col">
         <Header />
