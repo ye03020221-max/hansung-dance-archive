@@ -327,7 +327,7 @@ function PerformancesContent() {
                   <Filter className="h-5 w-5" />
                   필터
                 </h2>
-                <FilterSidebar />
+                {FilterSidebar()}
               </div>
             </aside>
 
