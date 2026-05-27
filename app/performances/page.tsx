@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
 import { supabase } from "@/lib/supabase"
 
 type PerformanceItem = {
@@ -59,7 +58,7 @@ function PerformancesContent() {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
-  const [yearRange, setYearRange] = useState([2015, 2035])
+  const [selectedYears, setSelectedYears] = useState<string[]>([])
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
@@ -120,6 +119,14 @@ function PerformancesContent() {
     return [...new Set(uniqueGenres)]
   }, [performances])
 
+  const availableYears = useMemo(() => {
+    const uniqueYears = performances
+      .map((item) => String(item.year || "").trim())
+      .filter((year) => year !== "")
+
+    return [...new Set(uniqueYears)].sort((a, b) => Number(b) - Number(a))
+  }, [performances])
+
   const categories = ["졸업공연", "H-Festa", "창작발표회"]
 
   const toggleGenre = (genre: string) => {
@@ -145,13 +152,19 @@ function PerformancesContent() {
     )
   }
 
+  const toggleYear = (year: string) => {
+    setVisibleCount(PAGE_SIZE)
+    setSelectedYears((prev) =>
+      prev.includes(year) ? prev.filter((y) => y !== year) : [...prev, year]
+    )
+  }
+
   const filteredPerformances = performances.filter((p) => {
     const safeTitle = (p.title || "").toLowerCase()
     const safeGenre = (p.genre || "").toLowerCase()
     const safeCategory = (p.category || "").toLowerCase()
     const safeType = (p.type || "").toLowerCase()
     const safeYearText = String(p.year || "")
-    const safeYearNumber = Number(p.year || 0)
     const keyword = searchQuery.toLowerCase()
 
     const matchesSearch =
@@ -172,8 +185,7 @@ function PerformancesContent() {
       selectedTypes.length === 0 || selectedTypes.includes(p.type || "")
 
     const matchesYear =
-      !safeYearNumber ||
-      (safeYearNumber >= yearRange[0] && safeYearNumber <= yearRange[1])
+      selectedYears.length === 0 || selectedYears.includes(String(p.year || "").trim())
 
     return matchesSearch && matchesGenre && matchesCategory && matchesType && matchesYear
   })
@@ -185,7 +197,7 @@ function PerformancesContent() {
     setSelectedGenres([])
     setSelectedCategories([])
     setSelectedTypes([])
-    setYearRange([2015, 2035])
+    setSelectedYears([])
     setSearchQuery("")
     setVisibleCount(PAGE_SIZE)
   }
@@ -256,23 +268,27 @@ function PerformancesContent() {
       </div>
 
       <div className="space-y-3">
-        <Label className="text-sm font-semibold text-navy">연도 범위</Label>
-        <div className="px-2">
-          <Slider
-            value={yearRange}
-            onValueChange={(value) => {
-              setYearRange(value as number[])
-              setVisibleCount(PAGE_SIZE)
-            }}
-            min={2015}
-            max={2035}
-            step={1}
-            className="mb-2"
-          />
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>{yearRange[0]}</span>
-            <span>{yearRange[1]}</span>
-          </div>
+        <Label className="text-sm font-semibold text-navy">연도</Label>
+        <div className="space-y-2">
+          {availableYears.length === 0 ? (
+            <p className="text-sm text-muted-foreground">등록된 연도가 없어요</p>
+          ) : (
+            availableYears.map((year) => (
+              <div key={year} className="flex items-center gap-3">
+                <Checkbox
+                  id={`year-${year}`}
+                  checked={selectedYears.includes(year)}
+                  onCheckedChange={() => toggleYear(year)}
+                />
+                <Label
+                  htmlFor={`year-${year}`}
+                  className="cursor-pointer text-sm font-normal text-foreground/80"
+                >
+                  {year}
+                </Label>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -350,7 +366,8 @@ function PerformancesContent() {
                     {searchQuery ||
                     selectedGenres.length > 0 ||
                     selectedCategories.length > 0 ||
-                    selectedTypes.length > 0
+                    selectedTypes.length > 0 ||
+                    selectedYears.length > 0
                       ? filteredPerformances.length
                       : totalCount}
                   </span>
@@ -365,6 +382,7 @@ function PerformancesContent() {
                 {(selectedGenres.length > 0 ||
                   selectedCategories.length > 0 ||
                   selectedTypes.length > 0 ||
+                  selectedYears.length > 0 ||
                   searchQuery) && (
                   <button
                     onClick={clearFilters}

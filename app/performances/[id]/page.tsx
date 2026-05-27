@@ -400,7 +400,9 @@ export default function PerformanceDetailPage({
                 </h2>
 
                 <div className="space-y-3">
-                  <MetadataItem label="Identifier (식별자)" value={performance.identifier} />
+                  {performance.type !== "poster" && performance.type !== "pamphlet" && (
+  <MetadataItem label="Identifier (식별자)" value={performance.identifier} />
+)}
                   <MetadataItem label="Title (제목)" value={performance.title} />
                   <MetadataItem label="Creator (제작자)" value={performance.creator} />
                   <MetadataItem label="Subject (장르)" value={performance.subject} />
