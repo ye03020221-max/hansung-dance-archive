@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -29,6 +29,7 @@ export default function HomePage() {
   const [performances, setPerformances] = useState<HomePerformance[]>([])
   const [loading, setLoading] = useState(true)
   const [aboutImageUrl, setAboutImageUrl] = useState("")
+  const [selectedYear, setSelectedYear] = useState<string>("")
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,17 +37,31 @@ export default function HomePage() {
 
       const { data, error } = await supabase
         .from("자료")
-        .select("id, title, year, genre, category, file_url, thumbnail_url, type")
+        .select("id, title, year, genre, category, file_url, thumbnail_url, type, created_at")
+        .order("year", { ascending: false })
         .order("created_at", { ascending: false })
 
       if (error) {
         console.error("홈 최신 자료 불러오기 오류:", error)
         setPerformances([])
       } else {
-        const videoData =
-          (data || []).filter((item) => item.type?.toLowerCase() === "video")
+        const videoData = (data || []).filter(
+          (item) => item.type?.toLowerCase() === "video"
+        )
 
         setPerformances(videoData)
+
+        const years = Array.from(
+          new Set(
+            videoData
+              .map((item) => item.year)
+              .filter((year): year is string => Boolean(year))
+          )
+        ).sort((a, b) => Number(b) - Number(a))
+
+        if (years.length > 0) {
+          setSelectedYear(years[0])
+        }
       }
 
       const { data: aboutData, error: aboutError } = await supabase
@@ -80,28 +95,42 @@ export default function HomePage() {
     router.push(`/performances?q=${encodeURIComponent(keyword)}`)
   }
 
+  const years = useMemo(() => {
+    return Array.from(
+      new Set(
+        performances
+          .map((item) => item.year)
+          .filter((year): year is string => Boolean(year))
+      )
+    ).sort((a, b) => Number(b) - Number(a))
+  }, [performances])
+
+  const selectedYearPerformances = useMemo(() => {
+    return performances.filter((item) => item.year === selectedYear)
+  }, [performances, selectedYear])
+
   const archiveSections = [
     {
       title: "한국무용",
-      description: "한국무용 장르의 동영상 자료를 확인하세요",
-      href: "/performances?q=한국무용",
-      items: performances
+      description: `${selectedYear}년 한국무용 장르의 동영상 자료를 확인하세요`,
+      href: `/performances?q=${encodeURIComponent("한국무용")}&year=${encodeURIComponent(selectedYear)}`,
+      items: selectedYearPerformances
         .filter((item) => item.genre === "한국무용")
         .slice(0, 3),
     },
     {
       title: "발레",
-      description: "발레 장르의 동영상 자료를 확인하세요",
-      href: "/performances?q=발레",
-      items: performances
+      description: `${selectedYear}년 발레 장르의 동영상 자료를 확인하세요`,
+      href: `/performances?q=${encodeURIComponent("발레")}&year=${encodeURIComponent(selectedYear)}`,
+      items: selectedYearPerformances
         .filter((item) => item.genre === "발레")
         .slice(0, 3),
     },
     {
       title: "현대무용",
-      description: "현대무용 장르의 동영상 자료를 확인하세요",
-      href: "/performances?q=현대무용",
-      items: performances
+      description: `${selectedYear}년 현대무용 장르의 동영상 자료를 확인하세요`,
+      href: `/performances?q=${encodeURIComponent("현대무용")}&year=${encodeURIComponent(selectedYear)}`,
+      items: selectedYearPerformances
         .filter((item) => item.genre === "현대무용")
         .slice(0, 3),
     },
@@ -163,13 +192,13 @@ export default function HomePage() {
         {/* 공연 아카이브 */}
         <section className="relative z-20 bg-[#eef7ff] py-12 md:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-12 flex items-center justify-between">
+            <div className="mb-8 flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-navy md:text-3xl">
                   공연 아카이브
                 </h2>
                 <p className="mt-2 text-muted-foreground">
-                  한국무용, 발레, 현대무용 동영상 자료를 빠르게 확인하세요
+                  연도별로 공연 자료를 선택하고, 장르별 동영상 자료를 빠르게 확인하세요
                 </p>
               </div>
 
@@ -190,95 +219,144 @@ export default function HomePage() {
                 <p className="text-muted-foreground">자료 불러오는 중...</p>
               </div>
             ) : (
-              <div className="space-y-12">
-                {archiveSections.map((section) => (
-                  <div key={section.title}>
-                    <div className="mb-5 flex items-end justify-between">
-                      <div>
-                        <h3 className="text-xl font-bold text-navy md:text-2xl">
-                          {section.title}
+              <>
+                {years.length > 0 ? (
+                  <>
+                    <div className="mb-10 rounded-2xl bg-white p-4 shadow-md">
+                      <div className="mb-3 flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-navy">
+                          연도별 보기
                         </h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {section.description}
+                        <p className="text-sm text-muted-foreground">
+                          원하는 연도를 선택하세요
                         </p>
                       </div>
 
-                      <Link
-                        href={section.href}
-                        className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
-                      >
-                        더보기
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </div>
-
-                    {section.items.length === 0 ? (
-                      <div className="rounded-2xl bg-card py-10 text-center shadow-md">
-                        <p className="text-muted-foreground">
-                          아직 등록된 {section.title} 동영상 자료가 없어요.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        {section.items.map((performance) => (
-                          <Link
-                            key={performance.id}
-                            href={`/performances/${performance.id}`}
-                            className="group relative overflow-hidden rounded-2xl bg-card shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
+                      <div className="flex flex-wrap gap-3">
+                        {years.map((year) => (
+                          <button
+                            key={year}
+                            type="button"
+                            onClick={() => setSelectedYear(year)}
+                            className={`rounded-full border px-5 py-2 text-sm font-semibold transition-all ${
+                              selectedYear === year
+                                ? "border-primary bg-primary text-white shadow-md"
+                                : "border-sky-100 bg-sky-50 text-navy hover:border-primary hover:bg-primary/10"
+                            }`}
                           >
-                            <div className="relative aspect-video overflow-hidden bg-slate-100">
-                              {performance.thumbnail_url ? (
-                                <Image
-                                  src={performance.thumbnail_url}
-                                  alt={performance.title || "공연 동영상 썸네일"}
-                                  fill
-                                  className="object-cover transition-transform duration-300 group-hover:scale-110"
-                                />
-                              ) : performance.file_url ? (
-                                <video
-                                  src={`${performance.file_url}#t=30`}
-                                  className="h-full w-full object-cover"
-                                  muted
-                                  playsInline
-                                  preload="metadata"
-                                />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center text-slate-400">
-                                  <ImageIcon className="h-10 w-10" />
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="p-4">
-                              <div className="mb-2 flex flex-wrap gap-2">
-                                {performance.genre && (
-                                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                                    {performance.genre}
-                                  </span>
-                                )}
-                                {performance.category && (
-                                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
-                                    {performance.category}
-                                  </span>
-                                )}
-                              </div>
-
-                              <h4 className="font-semibold text-card-foreground">
-                                {performance.title || "제목 없음"}
-                              </h4>
-
-                              <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
-                                <Calendar className="h-4 w-4" />
-                                {performance.year || "연도 미입력"}
-                              </div>
-                            </div>
-                          </Link>
+                            {year}
+                          </button>
                         ))}
                       </div>
-                    )}
+                    </div>
+
+                    <div className="mb-8">
+                      <h3 className="text-xl font-bold text-navy md:text-2xl">
+                        {selectedYear}년 공연 자료
+                      </h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        선택한 연도의 자료를 한국무용, 발레, 현대무용 순으로 보여줍니다
+                      </p>
+                    </div>
+
+                    <div className="space-y-12">
+                      {archiveSections.map((section) => (
+                        <div key={section.title}>
+                          <div className="mb-5 flex items-end justify-between">
+                            <div>
+                              <h3 className="text-xl font-bold text-navy md:text-2xl">
+                                {section.title}
+                              </h3>
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {section.description}
+                              </p>
+                            </div>
+
+                            <Link
+                              href={section.href}
+                              className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                            >
+                              더보기
+                              <ArrowRight className="h-4 w-4" />
+                            </Link>
+                          </div>
+
+                          {section.items.length === 0 ? (
+                            <div className="rounded-2xl bg-card py-10 text-center shadow-md">
+                              <p className="text-muted-foreground">
+                                {selectedYear}년에 등록된 {section.title} 동영상 자료가 없어요.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                              {section.items.map((performance) => (
+                                <Link
+                                  key={performance.id}
+                                  href={`/performances/${performance.id}`}
+                                  className="group relative overflow-hidden rounded-2xl bg-card shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
+                                >
+                                  <div className="relative aspect-video overflow-hidden bg-slate-100">
+                                    {performance.thumbnail_url ? (
+                                      <Image
+                                        src={performance.thumbnail_url}
+                                        alt={performance.title || "공연 동영상 썸네일"}
+                                        fill
+                                        className="object-cover transition-transform duration-300 group-hover:scale-110"
+                                      />
+                                    ) : performance.file_url ? (
+                                      <video
+                                        src={`${performance.file_url}#t=30`}
+                                        className="h-full w-full object-cover"
+                                        muted
+                                        playsInline
+                                        preload="metadata"
+                                      />
+                                    ) : (
+                                      <div className="flex h-full w-full items-center justify-center text-slate-400">
+                                        <ImageIcon className="h-10 w-10" />
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="p-4">
+                                    <div className="mb-2 flex flex-wrap gap-2">
+                                      {performance.genre && (
+                                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                          {performance.genre}
+                                        </span>
+                                      )}
+                                      {performance.category && (
+                                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+                                          {performance.category}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <h4 className="font-semibold text-card-foreground">
+                                      {performance.title || "제목 없음"}
+                                    </h4>
+
+                                    <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
+                                      <Calendar className="h-4 w-4" />
+                                      {performance.year || "연도 미입력"}
+                                    </div>
+                                  </div>
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="rounded-2xl bg-card py-16 text-center shadow-md">
+                    <p className="text-muted-foreground">
+                      아직 등록된 동영상 자료가 없어요.
+                    </p>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
         </section>
