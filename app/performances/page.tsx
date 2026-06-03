@@ -20,6 +20,7 @@ type PerformanceItem = {
   type: string | null
   genre: string | null
   category: string | null
+  choreographer: string | null
   file_url: string | null
   thumbnail_url: string | null
   created_at?: string | null
@@ -64,7 +65,10 @@ function PerformancesContent() {
 
   useEffect(() => {
     const q = searchParams.get("q") || ""
+    const year = searchParams.get("year") || ""
+
     setSearchQuery(q)
+    setSelectedYears(year ? [year] : [])
     setVisibleCount(PAGE_SIZE)
   }, [searchParams])
 
@@ -74,7 +78,7 @@ function PerformancesContent() {
     const { data, error, count } = await supabase
       .from("자료")
       .select(
-        "id, title, year, type, genre, category, file_url, thumbnail_url, created_at",
+        "id, title, year, type, genre, category, choreographer, file_url, thumbnail_url, created_at",
         { count: "exact" }
       )
       .order("year", { ascending: false })
@@ -164,14 +168,17 @@ function PerformancesContent() {
     const safeGenre = (p.genre || "").toLowerCase()
     const safeCategory = (p.category || "").toLowerCase()
     const safeType = (p.type || "").toLowerCase()
+    const safeChoreographer = (p.choreographer || "").toLowerCase()
     const safeYearText = String(p.year || "")
-    const keyword = searchQuery.toLowerCase()
+    const keyword = searchQuery.toLowerCase().trim()
 
     const matchesSearch =
+      keyword === "" ||
       safeTitle.includes(keyword) ||
       safeGenre.includes(keyword) ||
       safeCategory.includes(keyword) ||
       safeType.includes(keyword) ||
+      safeChoreographer.includes(keyword) ||
       safeYearText.includes(keyword)
 
     const matchesGenre =
@@ -185,7 +192,8 @@ function PerformancesContent() {
       selectedTypes.length === 0 || selectedTypes.includes(p.type || "")
 
     const matchesYear =
-      selectedYears.length === 0 || selectedYears.includes(String(p.year || "").trim())
+      selectedYears.length === 0 ||
+      selectedYears.includes(String(p.year || "").trim())
 
     return matchesSearch && matchesGenre && matchesCategory && matchesType && matchesYear
   })
@@ -210,7 +218,7 @@ function PerformancesContent() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="작품명, 장르, 공연 구분, 자료 유형, 연도 검색..."
+            placeholder="작품명, 안무가, 장르, 공연 구분, 자료 유형, 연도 검색..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value)
@@ -460,6 +468,12 @@ function PerformancesContent() {
                           <h3 className="font-semibold text-card-foreground">
                             {performance.title || "제목 없음"}
                           </h3>
+
+                          {performance.choreographer && (
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              안무가 {performance.choreographer}
+                            </p>
+                          )}
 
                           <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
                             <Calendar className="h-4 w-4" />
