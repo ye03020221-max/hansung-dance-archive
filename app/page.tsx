@@ -172,7 +172,7 @@ export default function HomePage() {
 
                 <Input
                   type="search"
-                  placeholder="작품명, 장르, 공연 구분, 연도로 검색하세요"
+                  placeholder="작품명, 장르, 공연 구분, 연도, 안무가로 검색하세요"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="h-14 rounded-full border-2 border-primary/20 bg-card pl-12 pr-28 text-lg shadow-lg transition-shadow focus:border-primary focus:shadow-xl"
