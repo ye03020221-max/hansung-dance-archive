@@ -415,7 +415,7 @@ export default function PerformanceDetailPage({
                   <MetadataItem label="Source (출처)" value={performance.source} />
                   <MetadataItem label="Language (언어)" value={performance.language} />
                   <MetadataItem label="Relation (관계)" value={performance.relation} />
-                  <MetadataItem label="Coverage (범위)" value={performance.coverage} />
+                  <MetadataItem label="Coverage (공연 장소)" value={performance.coverage} />
                   <MetadataItem label="Rights (권리)" value={performance.rights} />
                 </div>
               </div>
