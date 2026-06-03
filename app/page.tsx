@@ -189,10 +189,9 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* 공연 아카이브 */}
         <section className="relative z-20 bg-[#eef7ff] py-12 md:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-8 flex items-center justify-between">
+            <div className="mb-10 flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-navy md:text-3xl">
                   공연 아카이브
@@ -222,41 +221,27 @@ export default function HomePage() {
               <>
                 {years.length > 0 ? (
                   <>
-                    <div className="mb-10 rounded-2xl bg-white p-4 shadow-md">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-navy">
-                          연도별 보기
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          원하는 연도를 선택하세요
-                        </p>
-                      </div>
-
-                      <div className="flex flex-wrap gap-3">
+                    <div className="mb-16 flex justify-center">
+                      <div className="flex flex-wrap items-center justify-center gap-10 md:gap-14">
                         {years.map((year) => (
                           <button
                             key={year}
                             type="button"
                             onClick={() => setSelectedYear(year)}
-                            className={`rounded-full border px-5 py-2 text-sm font-semibold transition-all ${
+                            className={`relative px-2 pb-4 text-xl font-bold transition-all duration-200 ${
                               selectedYear === year
-                                ? "border-primary bg-primary text-white shadow-md"
-                                : "border-sky-100 bg-sky-50 text-navy hover:border-primary hover:bg-primary/10"
+                                ? "text-sky-500"
+                                : "text-slate-400 hover:text-sky-500"
                             }`}
                           >
                             {year}
+
+                            {selectedYear === year && (
+                              <span className="absolute bottom-0 left-1/2 h-[3px] w-12 -translate-x-1/2 rounded-full bg-sky-500" />
+                            )}
                           </button>
                         ))}
                       </div>
-                    </div>
-
-                    <div className="mb-8">
-                      <h3 className="text-xl font-bold text-navy md:text-2xl">
-                        {selectedYear}년 공연 자료
-                      </h3>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        선택한 연도의 자료를 한국무용, 발레, 현대무용 순으로 보여줍니다
-                      </p>
                     </div>
 
                     <div className="space-y-12">
